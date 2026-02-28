@@ -23,6 +23,8 @@ app.get("/api/health", (req, res) => {
 });
 
 function startServer(port) {
+  if (process.env.VERCEL) return; // Vercel handles starting the server internally
+
   const server = app.listen(port, () => {
     console.log(`Server running on port ${port}`);
   });
@@ -49,3 +51,5 @@ mongoose
     startServer(PORT);
   })
   .catch((err) => console.error("MongoDB connection error:", err));
+
+export default app;
