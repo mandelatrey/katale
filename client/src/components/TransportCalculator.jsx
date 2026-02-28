@@ -1,17 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 
-export default function TransportCalculator({ fromMarket }) {
-  const [toMarkets, setToMarkets] = useState([]);
+export default function TransportCalculator({ fromMarket, allMarkets = [] }) {
   const [selectedTo, setSelectedTo] = useState('');
+  const [destinationQuery, setDestinationQuery] = useState('');
   const [result, setResult] = useState(null);
   const [calculating, setCalculating] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/markets')
-      .then(r => r.json())
-      .then(markets => setToMarkets(markets.filter(m => m._id !== fromMarket._id)))
-      .catch(console.error);
-  }, [fromMarket._id]);
+  // Derive destination markets from prop instead of fetching (Fix #6)
+  const toMarkets = useMemo(
+    () => allMarkets.filter(m => m._id !== fromMarket._id),
+    [allMarkets, fromMarket._id]
+  );
+
+  const filteredDestinations = destinationQuery
+    ? toMarkets.filter(m =>
+        `${m.name} ${m.district}`.toLowerCase().includes(destinationQuery.toLowerCase())
+      ).slice(0, 8)
+    : toMarkets.slice(0, 8);
 
   const handleCalculate = async () => {
     if (!selectedTo) return;
@@ -33,19 +40,44 @@ export default function TransportCalculator({ fromMarket }) {
         Estimate Transport Cost
       </h4>
       <div className="transport-form">
-        <select value={selectedTo} onChange={e => setSelectedTo(e.target.value)}>
-          <option value="">Select destination...</option>
-          {toMarkets.map(m => (
-            <option key={m._id} value={m._id}>{m.name} ({m.district})</option>
-          ))}
-        </select>
-        <button
+        <div className="transport-destination">
+          <Input
+            type="text"
+            className="transport-input"
+            placeholder="Start typing town or market..."
+            value={destinationQuery}
+            onChange={e => {
+              setDestinationQuery(e.target.value);
+              setSelectedTo('');
+            }}
+          />
+          {filteredDestinations.length > 0 && destinationQuery && (
+            <div className="transport-suggestions">
+              {filteredDestinations.map(m => (
+                <Button
+                  key={m._id}
+                  type="button"
+                  variant="ghost"
+                  className="transport-suggestion"
+                  onClick={() => {
+                    setSelectedTo(m._id);
+                    setDestinationQuery(`${m.name} (${m.district})`);
+                  }}
+                >
+                  <span className="transport-suggestion-name">{m.name}</span>
+                  <span className="transport-suggestion-meta">{m.district}</span>
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+        <Button
           className="transport-btn"
           onClick={handleCalculate}
           disabled={!selectedTo || calculating}
         >
           {calculating ? '...' : 'Calculate'}
-        </button>
+        </Button>
       </div>
 
       {result && (

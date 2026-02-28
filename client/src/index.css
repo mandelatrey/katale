@@ -1,4 +1,78 @@
-/* ─── Design Tokens ──────────────────────────────────────────────────────── */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Shadcn theme tokens (for Tailwind) ─────────────────────────────────── */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 142 72% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 142 72% 35%;
+
+    --radius: 0.875rem;
+  }
+
+  .dark {
+    --background: 215 27% 12%;
+    --foreground: 0 0% 100%;
+
+    --card: 215 23% 15%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 215 23% 15%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 142 72% 40%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 24%;
+    --input: 217.2 32.6% 24%;
+    --ring: 142 72% 40%;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* ─── Design Tokens (existing app) ───────────────────────────────────────── */
 :root {
   --green-900: #0d3b1a;
   --green-800: #145226;
@@ -46,8 +120,6 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: var(--font);
-  background: var(--gray-100);
-  color: var(--gray-900);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -62,8 +134,8 @@ body {
 .sidebar {
   width: 400px;
   min-width: 400px;
-  background: white;
-  border-right: 1px solid var(--gray-200);
+  background: color-mix(in srgb, white 92%, transparent);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -110,17 +182,54 @@ body {
   flex: 1;
   position: relative;
   min-width: 0;
+  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.05), transparent 55%);
 }
 
 #map { width: 100%; height: 100%; }
 
+/* ─── Map Controls Bar ────────────────────────────────────────────────────── */
+.map-controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(8px);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--gray-200);
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 500;
+  min-width: 210px;
+}
+
+.map-controls-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.map-controls-label {
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 10px;
+}
+
+
+
 /* ─── Control Panels ─────────────────────────────────────────────────────── */
 .control-panel {
-  background: white;
+  background: hsl(var(--card));
   padding: 14px;
   border-radius: var(--radius-md);
   margin-bottom: 12px;
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--border);
   transition: border-color var(--transition);
 }
 
@@ -322,11 +431,29 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   padding: 20px;
+  box-sizing: border-box;
+  width: 360px;
   min-width: 320px;
-  max-width: 380px;
+  max-width: 520px;
+  min-height: 260px;
+  max-height: 80vh;
+  resize: both;
+  overflow: auto;
   z-index: 1000;
   border: 1px solid var(--gray-200);
   animation: popupIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.popup::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid var(--gray-300);
+  border-bottom: 2px solid var(--gray-300);
+  pointer-events: none;
 }
 
 @keyframes popupIn {
@@ -482,10 +609,17 @@ body {
   display: flex;
   gap: 8px;
   margin-top: 10px;
+  flex-wrap: wrap;
 }
 
-.transport-form select {
+.transport-destination {
+  position: relative;
   flex: 1;
+  min-width: 0;
+}
+
+.transport-input {
+  width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-sm);
@@ -493,15 +627,58 @@ body {
   font-family: var(--font);
   color: var(--gray-700);
   background: white;
-  appearance: auto;
-  cursor: pointer;
-  transition: border-color var(--transition);
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.transport-form select:focus {
+.transport-input:focus {
   outline: none;
   border-color: var(--green-500);
   box-shadow: 0 0 0 3px rgba(39, 174, 74, 0.1);
+}
+
+.transport-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-lg);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.transport-suggestion {
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: white;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  color: var(--gray-700);
+  transition: background var(--transition);
+}
+
+.transport-suggestion:hover {
+  background: var(--gray-50);
+}
+
+.transport-suggestion-name {
+  font-weight: 500;
+}
+
+.transport-suggestion-meta {
+  font-size: 11px;
+  color: var(--gray-500);
 }
 
 .transport-btn {
@@ -658,17 +835,7 @@ body {
   gap: 8px;
 }
 
-.skeleton {
-  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-  border-radius: var(--radius-sm);
-}
 
-@keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
-}
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {

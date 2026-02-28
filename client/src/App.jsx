@@ -1,38 +1,85 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import OSM from 'ol/source/OSM';
+import XYZ from 'ol/source/XYZ';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import { fromLonLat } from 'ol/proj';
-import { Style, Circle, Fill, Stroke, Text } from 'ol/style';
+import { Style, Circle, Fill, Stroke } from 'ol/style';
 import Popup from './components/Popup';
-import PriceChart from './components/PriceChart';
 import MarketList from './components/MarketList';
-import TransportCalculator from './components/TransportCalculator';
+import { Button } from './components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from './components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuCheckboxItem,
+} from './components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
+import { commodities, regions } from './constants';
 
 const API_URL = '/api';
 
-const commodities = [
-  { key: 'maize', label: 'Maize', icon: '🌽' },
-  { key: 'beans', label: 'Beans', icon: '🫘' },
-  { key: 'coffee', label: 'Coffee', icon: '☕' },
-  { key: 'matooke', label: 'Matooke', icon: '🍌' },
-  { key: 'rice', label: 'Rice', icon: '🍚' },
-  { key: 'groundnuts', label: 'G.Nuts', icon: '🥜' },
-  { key: 'cassava', label: 'Cassava', icon: '🥔' },
-  { key: 'sweet_potatoes', label: 'S.Potato', icon: '🍠' },
-  { key: 'sorghum', label: 'Sorghum', icon: '🌾' },
-  { key: 'millet', label: 'Millet', icon: '🌱' }
+const MAP_TILER_API_KEY = import.meta.env.VITE_MAP_TILER_API_KEY;
+
+const BASE_LAYERS = [
+  { id: 'streets', label: 'Streets', description: 'MapTiler streets' },
+  { id: 'transport', label: 'Transport', description: 'MapTiler transport' },
+  { id: 'outdoor', label: 'Outdoor', description: 'MapTiler outdoor' },
+  { id: 'topo', label: 'Topo', description: 'MapTiler topo' },
+  { id: 'satellite', label: 'Satellite', description: 'MapTiler satellite' }
 ];
 
-const regions = ['All', 'Central', 'Eastern', 'Northern', 'Western'];
+function createBaseLayer(type) {
+  if (MAP_TILER_API_KEY) {
+    let url;
 
-function getMarkerStyle(price, allPrices, isSelected) {
-  if (!allPrices.length || price === 'N/A') {
+    switch (type) {
+      case 'streets':
+        url = `https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${MAP_TILER_API_KEY}`;
+        break;
+      case 'transport':
+        url = `https://api.maptiler.com/maps/transport-v2/256/{z}/{x}/{y}.png?key=${MAP_TILER_API_KEY}`;
+        break;
+      case 'outdoor':
+        url = `https://api.maptiler.com/maps/outdoor-v2/256/{z}/{x}/{y}.png?key=${MAP_TILER_API_KEY}`;
+        break;
+      case 'satellite':
+        url = `https://api.maptiler.com/maps/satellite/256/{z}/{x}/{y}.jpg?key=${MAP_TILER_API_KEY}`;
+        break;
+      case 'topo':
+        url = `https://api.maptiler.com/maps/topo-v2/256/{z}/{x}/{y}.png?key=${MAP_TILER_API_KEY}`;
+        break;
+      default:
+        url = `https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${MAP_TILER_API_KEY}`;
+        break;
+    }
+
+    return new TileLayer({
+      source: new XYZ({
+        url,
+        crossOrigin: 'anonymous'
+      })
+    });
+  }
+
+  // Fallback to standard OSM tiles if no MapTiler key is available
+  return new TileLayer({
+    source: new OSM()
+  });
+}
+
+function getMarkerStyle(price, priceRange, isSelected) {
+  if (!priceRange || price === 'N/A') {
     return new Style({
       image: new Circle({
         radius: isSelected ? 10 : 7,
@@ -42,9 +89,7 @@ function getMarkerStyle(price, allPrices, isSelected) {
     });
   }
 
-  const values = allPrices.map(p => p.price).filter(Boolean);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const { min, max } = priceRange;
   const range = max - min || 1;
   const ratio = (price - min) / range;
 
@@ -65,40 +110,79 @@ function getMarkerStyle(price, allPrices, isSelected) {
 function App() {
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
+  const [baseLayer, setBaseLayer] = useState(null);
+  const [baseLayerType, setBaseLayerType] = useState('streets');
   const [markets, setMarkets] = useState([]);
   const [prices, setPrices] = useState([]);
   const [selectedCommodity, setSelectedCommodity] = useState('maize');
   const [selectedRegion, setSelectedRegion] = useState('All');
   const [selectedMarket, setSelectedMarket] = useState(null);
   const [marketLayer, setMarketLayer] = useState(null);
+  const [showMarkets, setShowMarkets] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [nearestMarkets, setNearestMarkets] = useState([]);
 
   useEffect(() => {
+    const initialBaseLayer = createBaseLayer(baseLayerType);
     const mapInstance = new Map({
       target: 'map',
-      layers: [
-        new TileLayer({ source: new OSM() })
-      ],
+      layers: [initialBaseLayer],
       view: new View({ center: fromLonLat([32.3, 1.4]), zoom: 7 })
     });
     setMap(mapInstance);
-    return () => mapInstance.setTarget(undefined);
+    setBaseLayer(initialBaseLayer);
+    return () => {
+      mapInstance.setTarget(undefined);
+      mapInstance.dispose(); // Fix #10: fully dispose map on unmount
+    };
   }, []);
+
+  // Fix #9: dispose old base layer source when swapping
+  useEffect(() => {
+    if (!map) return;
+
+    const newBaseLayer = createBaseLayer(baseLayerType);
+
+    if (baseLayer) {
+      map.removeLayer(baseLayer);
+      baseLayer.getSource()?.dispose?.();
+    }
+
+    map.getLayers().insertAt(0, newBaseLayer);
+    setBaseLayer(newBaseLayer);
+  }, [map, baseLayerType]);
 
   useEffect(() => {
     fetchMarkets();
     fetchPrices();
   }, [selectedCommodity]);
 
+  // Precompute price range once for marker styling (Fix #7)
+  const priceRange = useMemo(() => {
+    const values = prices.map(p => p.price).filter(Boolean);
+    if (!values.length) return null;
+    return { min: Math.min(...values), max: Math.max(...values) };
+  }, [prices]);
+
+  // Compute filtered markets once (Fix #5)
+  const filteredMarkets = useMemo(() => {
+    return selectedRegion === 'All'
+      ? markets
+      : markets.filter(m => m.region === selectedRegion);
+  }, [markets, selectedRegion]);
+
+  // Build market layer — no selectedMarket dependency (Fix #1)
   useEffect(() => {
     if (!map || !markets.length) return;
 
-    const filteredMarkets = selectedRegion === 'All'
-      ? markets
-      : markets.filter(m => m.region === selectedRegion);
+    if (!showMarkets) {
+      if (marketLayer) {
+        marketLayer.setVisible(false);
+      }
+      return;
+    }
 
     const source = new VectorSource({
       features: filteredMarkets.map(m => {
@@ -109,18 +193,19 @@ function App() {
         feature.setId(m._id);
 
         const price = getPriceForMarket(m._id);
-        const isSelected = selectedMarket?._id === m._id;
         feature.setStyle(getMarkerStyle(
           typeof price === 'number' ? price : 'N/A',
-          prices,
-          isSelected
+          priceRange,
+          false
         ));
 
         return feature;
       })
     });
 
-    if (marketLayer) map.removeLayer(marketLayer);
+    if (marketLayer) {
+      map.removeLayer(marketLayer);
+    }
 
     const layer = new VectorLayer({ source });
     map.addLayer(layer);
@@ -138,45 +223,77 @@ function App() {
     map.on('click', clickListener);
 
     return () => map.un('click', clickListener);
-  }, [map, markets, prices, selectedRegion, selectedMarket]);
+  }, [map, filteredMarkets, prices, priceRange, showMarkets]);
 
-  const fetchMarkets = async () => {
+  // Highlight selected market without rebuilding the layer (Fix #1)
+  useEffect(() => {
+    if (!marketLayer) return;
+    const source = marketLayer.getSource();
+    if (!source) return;
+
+    source.getFeatures().forEach(feature => {
+      const fid = feature.getId();
+      const isSelected = selectedMarket?._id === fid;
+      const price = getPriceForMarket(fid);
+      feature.setStyle(getMarkerStyle(
+        typeof price === 'number' ? price : 'N/A',
+        priceRange,
+        isSelected
+      ));
+    });
+  }, [selectedMarket, marketLayer, priceRange, prices]);
+
+  useEffect(() => {
+    if (!map || !selectedMarket?.location?.coordinates) return;
+
+    const [longitude, latitude] = selectedMarket.location.coordinates;
+
+    map.getView().animate({
+      center: fromLonLat([longitude, latitude]),
+      zoom: 14,
+      duration: 800
+    });
+  }, [map, selectedMarket]);
+
+  // Fix #14: wrap fetch functions with useCallback
+  const fetchMarkets = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/markets`);
       const data = await res.json();
-      setMarkets(data);
+      setMarkets(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Failed to load markets');
     }
-  };
+  }, []);
 
-  const fetchPrices = async () => {
+  const fetchPrices = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/prices/latest?commodity=${selectedCommodity}`);
       const data = await res.json();
-      setPrices(data);
+      setPrices(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Failed to load prices');
+      setPrices([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCommodity]);
 
-  const handleFindNearest = () => {
+  const handleFindNearest = useCallback(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         const { latitude, longitude } = pos.coords;
         setUserLocation([longitude, latitude]);
 
         try {
-          const res = await fetch(`${API_URL}/markets/nearest/${longitude}/${latitude}?maxDistance=100000`);
+          const res = await fetch(`${API_URL}/markets/nearest/${longitude}/${latitude}?maxDistance=50000`);
           const data = await res.json();
-          setNearestMarkets(data);
+          setNearestMarkets(Array.isArray(data) ? data : []);
 
           map.getView().animate({
             center: fromLonLat([longitude, latitude]),
-            zoom: 9,
+            zoom: 10,
             duration: 800
           });
         } catch (err) {
@@ -184,77 +301,115 @@ function App() {
         }
       });
     }
-  };
+  }, [map]);
 
-  const getPriceForMarket = (marketId) => {
+  const getPriceForMarket = useCallback((marketId) => {
     const price = prices.find(p => p.market?._id === marketId || p.market === marketId);
     return price?.price || 'N/A';
-  };
+  }, [prices]);
 
-  const filteredMarkets = selectedRegion === 'All'
-    ? markets
-    : markets.filter(m => m.region === selectedRegion);
+  // filteredMarkets is now computed via useMemo above
 
   const currentCommodity = commodities.find(c => c.key === selectedCommodity);
+  const currentBaseLayer = BASE_LAYERS.find(l => l.id === baseLayerType);
 
   return (
     <div className="app">
       <div className="sidebar">
-        <div className="sidebar-header">
-          <h1>🇺🇬 Uganda Market Map</h1>
-          <p>Real agricultural commodity prices across Uganda</p>
+        <div className="sidebar-header flex items-center justify-between gap-3">
+          <div>
+            <h1>🇺🇬 Katale</h1>
+            <p>Real agricultural commodity prices across Uganda</p>
+          </div>
         </div>
 
         <div className="sidebar-content">
           {error && (
             <div className="error">
               <span>⚠️</span> {error}
-              <button onClick={() => setError(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 16 }}>×</button>
+              <button
+                onClick={() => setError(null)}
+                style={{
+                  marginLeft: 'auto',
+                  background: 'none',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  fontSize: 16,
+                }}
+              >
+                ×
+              </button>
             </div>
           )}
 
-          <div className="control-panel">
-            <h3>Select Commodity</h3>
-            <div className="commodity-selector">
-              {commodities.map(c => (
-                <button
-                  key={c.key}
-                  className={`commodity-btn ${selectedCommodity === c.key ? 'active' : ''}`}
-                  onClick={() => setSelectedCommodity(c.key)}
-                >
-                  <span className="commodity-icon">{c.icon}</span>
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <Card className="control-panel">
+            <CardHeader className="pb-3">
+              <CardTitle>Select commodity</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="commodity-selector">
+                {commodities.map(c => (
+                  <Button
+                    key={c.key}
+                    variant={
+                      selectedCommodity === c.key ? 'default' : 'outline'
+                    }
+                    size="sm"
+                    className={`commodity-btn ${
+                      selectedCommodity === c.key ? 'active' : ''
+                    }`}
+                    onClick={() => setSelectedCommodity(c.key)}
+                  >
+                    <span className="commodity-icon">{c.icon}</span>
+                    {c.label}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="control-panel">
-            <h3>Filter by Region</h3>
-            <div className="region-filter">
-              {regions.map(r => (
-                <button
-                  key={r}
-                  className={`region-btn ${selectedRegion === r ? 'active' : ''}`}
-                  onClick={() => setSelectedRegion(r)}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
+          <Card className="control-panel">
+            <CardHeader className="pb-3">
+              <CardTitle>Filter by region</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="region-filter">
+                {regions.map(r => (
+                  <Button
+                    key={r}
+                    size="sm"
+                    variant={selectedRegion === r ? 'default' : 'outline'}
+                    className={`region-btn ${
+                      selectedRegion === r ? 'active' : ''
+                    }`}
+                    onClick={() => setSelectedRegion(r)}
+                  >
+                    {r}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="control-panel">
-            <h3>Your Location</h3>
-            <button className="commodity-btn active" onClick={handleFindNearest}>
-              📍 Find Nearest Markets
-            </button>
-            {nearestMarkets.length > 0 && (
-              <p style={{ marginTop: 8, fontSize: 12, color: '#6b7280' }}>
-                Found {nearestMarkets.length} markets within 100km
-              </p>
-            )}
-          </div>
+          <Card className="control-panel">
+            <CardHeader className="pb-3">
+              <CardTitle>Your location</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-3">
+              <Button
+                className="commodity-btn active w-full justify-center"
+                onClick={handleFindNearest}
+              >
+                📍 Find nearest markets
+              </Button>
+              {nearestMarkets.length > 0 && (
+                <p style={{ fontSize: 12, color: '#6b7280' }}>
+                  Found {nearestMarkets.length} markets within 50km
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           <MarketList
             markets={filteredMarkets}
@@ -271,12 +426,58 @@ function App() {
       <div className="map-container">
         <div id="map" ref={mapRef}></div>
 
+        <div className="map-controls">
+          <div className="map-controls-row w-52">
+            <span className="map-controls-label font-medium text-gray-800">Base map</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-between text-[11px] font-medium"
+                >
+                  <span>{currentBaseLayer?.label || 'Choose map style'}</span>
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-[var(--radix-dropdown-menu-trigger-width)] text-[11px] bg-white/95 backdrop-blur-[8px] border border-gray-200 shadow-lg rounded-[10px] p-2 z-[1000]"
+              >
+                <DropdownMenuLabel className="font-medium text-gray-800">Base map style</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={baseLayerType}
+                  onValueChange={value => setBaseLayerType(value)}
+                >
+                  {BASE_LAYERS.map(layer => (
+                    <DropdownMenuRadioItem
+                      key={layer.id}
+                      value={layer.id}
+                      className="cursor-pointer text-gray-700 hover:text-gray-900 focus:text-gray-900"
+                    >
+                      {layer.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={showMarkets}
+                  onCheckedChange={value => setShowMarkets(Boolean(value))}
+                  className="cursor-pointer text-gray-700 hover:text-gray-900 focus:text-gray-900"
+                >
+                  Show market markers
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
         {selectedMarket && (
           <Popup
             market={selectedMarket}
             prices={prices}
             onClose={() => setSelectedMarket(null)}
             commodities={commodities}
+            allMarkets={markets}
           />
         )}
 

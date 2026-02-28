@@ -1,30 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PriceChart from './PriceChart';
 import TransportCalculator from './TransportCalculator';
+import { Button } from './ui/button';
+import { commodities as allCommodities } from '../constants';
 
-const allCommodities = [
-  { key: 'maize', icon: '🌽', label: 'Maize' },
-  { key: 'beans', icon: '🫘', label: 'Beans' },
-  { key: 'coffee', icon: '☕', label: 'Coffee' },
-  { key: 'matooke', icon: '🍌', label: 'Matooke' },
-  { key: 'rice', icon: '🍚', label: 'Rice' },
-  { key: 'groundnuts', icon: '🥜', label: 'Groundnuts' },
-  { key: 'cassava', icon: '🥔', label: 'Cassava' },
-  { key: 'sweet_potatoes', icon: '🍠', label: 'Sweet Potatoes' },
-  { key: 'sorghum', icon: '🌾', label: 'Sorghum' },
-  { key: 'millet', icon: '🌱', label: 'Millet' }
-];
-
-export default function Popup({ market, prices, onClose }) {
+export default function Popup({ market, prices, onClose, allMarkets }) {
   const [activeTab, setActiveTab] = useState('prices');
   const [marketPrices, setMarketPrices] = useState([]);
   const [loadingPrices, setLoadingPrices] = useState(true);
+  const priceCache = useRef({}); // Fix #11: cache prices per market
 
   useEffect(() => {
+    // Return cached data if we already fetched this market
+    if (priceCache.current[market._id]) {
+      setMarketPrices(priceCache.current[market._id]);
+      setLoadingPrices(false);
+      return;
+    }
+
     setLoadingPrices(true);
     fetch(`/api/prices/market/${market._id}?days=30`)
       .then(r => r.json())
       .then(data => {
+        priceCache.current[market._id] = data; // cache it
         setMarketPrices(data);
         setLoadingPrices(false);
       })
@@ -64,18 +62,29 @@ export default function Popup({ market, prices, onClose }) {
           <div className="popup-title">{market.name}</div>
           <div className="popup-subtitle">{market.district}, {market.region} Region</div>
         </div>
-        <button className="popup-close" onClick={onClose}>×</button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="popup-close"
+          onClick={onClose}
+          aria-label="Close details"
+        >
+          ×
+        </Button>
       </div>
 
       <div className="popup-tabs">
         {tabs.map(tab => (
-          <button
+          <Button
             key={tab.key}
+            type="button"
+            variant={activeTab === tab.key ? 'default' : 'ghost'}
+            size="sm"
             onClick={() => setActiveTab(tab.key)}
             className={`popup-tab ${activeTab === tab.key ? 'active' : ''}`}
           >
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -168,7 +177,7 @@ export default function Popup({ market, prices, onClose }) {
       )}
 
       {activeTab === 'transport' && (
-        <TransportCalculator fromMarket={market} />
+        <TransportCalculator fromMarket={market} allMarkets={allMarkets} />
       )}
 
       {activeTab === 'trends' && (
