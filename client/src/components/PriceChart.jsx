@@ -27,7 +27,7 @@ const commodityBorders = {
   millet: '#047857'
 };
 
-export default function PriceChart({ prices }) {
+export default function PriceChart({ prices, isMobile, currency = 'UGX' }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
 
@@ -43,7 +43,7 @@ export default function PriceChart({ prices }) {
       if (!grouped[p.commodity]) grouped[p.commodity] = [];
       grouped[p.commodity].push({
         x: new Date(p.recordedAt).toLocaleDateString('en-UG', { month: 'short', day: 'numeric' }),
-        y: p.price
+        y: currency === 'USD' ? p.price / 3700 : p.price
       });
     });
 
@@ -53,9 +53,9 @@ export default function PriceChart({ prices }) {
       borderColor: commodityBorders[commodity] || '#6b7280',
       backgroundColor: (commodityColors[commodity] || '#9ca3af') + '20',
       tension: 0.4,
-      pointRadius: 2,
-      pointHoverRadius: 5,
-      borderWidth: 2,
+      pointRadius: isMobile ? 0 : 2, // Hide dots by default on mobile for cleaner look
+      pointHoverRadius: isMobile ? 3 : 5,
+      borderWidth: isMobile ? 1.5 : 2,
       fill: false
     }));
 
@@ -66,34 +66,32 @@ export default function PriceChart({ prices }) {
         responsive: true,
         maintainAspectRatio: false,
         interaction: {
-          mode: 'index',
-          intersect: false
+          mode: isMobile ? 'nearest' : 'index',
+          intersect: isMobile ? true : false
         },
         plugins: {
           legend: {
-            position: 'bottom',
-            labels: {
-              boxWidth: 10,
-              font: { size: 10, family: 'Inter' },
-              padding: 8,
-              usePointStyle: true
-            }
+            display: false
           },
           tooltip: {
             backgroundColor: 'rgba(17, 24, 39, 0.9)',
-            titleFont: { size: 11, family: 'Inter' },
-            bodyFont: { size: 11, family: 'Inter' },
-            padding: 10,
+            titleFont: { size: isMobile ? 10 : 11, family: 'Inter' },
+            bodyFont: { size: isMobile ? 10 : 11, family: 'Inter' },
+            padding: isMobile ? 6 : 10,
             cornerRadius: 6,
+            displayColors: !isMobile,
             callbacks: {
-              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} UGX/kg`
+              label: (ctx) => {
+                const val = currency === 'USD' ? ctx.parsed.y.toFixed(2) : ctx.parsed.y.toLocaleString();
+                return `${isMobile ? '' : ctx.dataset.label + ': '}${val}`;
+              }
             }
           }
         },
         scales: {
           x: {
             ticks: {
-              maxTicksLimit: 7,
+              maxTicksLimit: isMobile ? 5 : 7,
               font: { size: 10, family: 'Inter' },
               color: '#9ca3af'
             },
@@ -105,10 +103,10 @@ export default function PriceChart({ prices }) {
               color: '#9ca3af',
               callback: (val) => val.toLocaleString()
             },
-            grid: { color: '#f3f4f6' },
+            grid: { color: isMobile ? 'transparent' : '#f3f4f6' },
             title: {
-              display: true,
-              text: 'UGX / kg',
+              display: !isMobile,
+              text: `${currency} / kg`,
               font: { size: 10, family: 'Inter' },
               color: '#9ca3af'
             }
@@ -118,7 +116,7 @@ export default function PriceChart({ prices }) {
     });
 
     return () => { if (chartRef.current) chartRef.current.destroy(); };
-  }, [prices]);
+  }, [prices, isMobile, currency]);
 
   if (!prices.length) {
     return (
@@ -128,9 +126,38 @@ export default function PriceChart({ prices }) {
     );
   }
 
+  const uniqueCommodities = [...new Set(prices.map(p => p.commodity))].sort();
+
   return (
-    <div className="chart-container" style={{ position: 'relative', width: '100%' }}>
-      <canvas ref={canvasRef}></canvas>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      <div className="chart-container" style={{ position: 'relative', width: '100%', height: isMobile ? 160 : 240 }}>
+        <canvas ref={canvasRef}></canvas>
+      </div>
+      
+      {/* Custom HTML Legend */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(2, 1fr)', 
+        gap: '6px 12px', 
+        marginTop: 16,
+        padding: '0 8px'
+      }}>
+        {uniqueCommodities.map(commodity => (
+          <div key={commodity} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              backgroundColor: (commodityColors[commodity] || '#9ca3af') + '80', // Slightly transparent to match fill
+              border: `2px solid ${commodityBorders[commodity] || '#6b7280'}`,
+              flexShrink: 0
+            }} />
+            <span style={{ fontSize: 10, color: '#4b5563', textTransform: 'capitalize', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {commodity.replace('_', ' ')}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

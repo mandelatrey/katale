@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { X } from 'lucide-react';
+import { X, TrendingUp } from 'lucide-react';
 
 export default function InsightsPanel({ onClose }) {
   const [insights, setInsights] = useState([]);
@@ -25,11 +25,11 @@ export default function InsightsPanel({ onClose }) {
   }, []);
 
   return (
-    <div className="fixed top-0 right-0 w-[400px] h-full bg-white shadow-2xl z-[100] flex flex-col border-l border-gray-200 overflow-hidden" 
+    <div className="fixed top-0 right-0 w-[400px] h-full bg-white shadow-2xl z-100 flex flex-col border-l border-gray-200 overflow-hidden"
          style={{ zIndex: 1000, boxShadow: '-5px 0 25px rgba(0,0,0,0.1)' }}>
       <div className="flex items-center justify-between p-4 border-b bg-gray-50">
         <h2 className="text-lg font-bold flex items-center gap-2">
-          <span>📈</span> Market Insights
+          <TrendingUp className="h-5 w-5 text-gray-700" /> Market Insights
         </h2>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-5 w-5" />
