@@ -1,4 +1,4 @@
-import { Store } from 'lucide-react';
+import { Store } from './Icons';
 
 export default function MarketList({ markets, prices, selectedMarket, onSelect, getPriceForMarket, loading, commodityUnit, isMobile, currency = 'UGX' }) {
   if (loading) {
@@ -71,15 +71,15 @@ export default function MarketList({ markets, prices, selectedMarket, onSelect, 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10, paddingTop: 8, borderTop: '1px dashed #e5e7eb' }}>
               <span>
                 <span style={{ color: '#9ca3af' }}>Retail: </span>
-                <span style={{ color: '#1f2937', fontWeight: 300, fontFamily: 'var(--font-mono)' }}>{retail}</span>
+                <span style={{ color: '#111827', fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11 }}>{retail}</span>
               </span>
               <span>
                 <span style={{ color: '#9ca3af' }}>Wholesale: </span>
-                <span style={{ fontWeight: 300, fontFamily: 'var(--font-mono)', color: isSelected ? '#2563eb' : '#ef4444' }}>{wholesale}</span>
+                <span style={{ fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11, color: isSelected ? '#1d4ed8' : '#dc2626' }}>{wholesale}</span>
               </span>
               <span>
                 <span style={{ color: '#9ca3af' }}>Discounted: </span>
-                <span style={{ color: '#2D9F6F', fontWeight: 300, fontFamily: 'var(--font-mono)' }}>{discounted}</span>
+                <span style={{ color: '#15803d', fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11 }}>{discounted}</span>
               </span>
             </div>
           </div>

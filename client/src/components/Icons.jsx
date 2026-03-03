@@ -1,0 +1,52 @@
+import React from 'react';
+import IonIcon from './IonIcon';
+
+export const LayoutDashboard = (p) => <IonIcon name="grid-outline" {...p} />;
+export const Users = (p) => <IonIcon name="people-outline" {...p} />;
+export const Truck = (p) => <IonIcon name="bus-outline" {...p} />;
+export const Factory = (p) => <IonIcon name="business-outline" {...p} />;
+export const CreditCard = (p) => <IonIcon name="card-outline" {...p} />;
+export const Receipt = (p) => <IonIcon name="receipt-outline" {...p} />;
+export const FileText = (p) => <IonIcon name="document-text-outline" {...p} />;
+export const Settings = (p) => <IonIcon name="settings-outline" {...p} />;
+export const Bell = (p) => <IonIcon name="notifications-outline" {...p} />;
+export const MessageSquare = (p) => <IonIcon name="chatbubble-outline" {...p} />;
+export const LogOut = (p) => <IonIcon name="log-out-outline" {...p} />;
+export const X = (p) => <IonIcon name="close-outline" {...p} />;
+export const TrendingUp = (p) => <IonIcon name="trending-up-outline" {...p} />;
+export const Store = (p) => <IonIcon name="storefront-outline" {...p} />;
+export const ChevronDown = (p) => <IonIcon name="chevron-down-outline" {...p} />;
+export const ChevronUp = (p) => <IonIcon name="chevron-up-outline" {...p} />;
+export const List = (p) => <IonIcon name="list-outline" {...p} />;
+export const Navigation = (p) => <IonIcon name="navigate-outline" {...p} />;
+export const TriangleAlert = (p) => <IonIcon name="warning-outline" {...p} />;
+export const MapPin = (p) => <IonIcon name="location-outline" {...p} />;
+export const LayoutGrid = (p) => <IonIcon name="grid-outline" {...p} />;
+export const Leaf = (p) => <IonIcon name="leaf-outline" {...p} />;
+export const MessageCircle = (p) => <IonIcon name="chatbubble-ellipses-outline" {...p} />;
+export const MoreHorizontal = (p) => <IonIcon name="ellipsis-horizontal-outline" {...p} />;
+export const Package = (p) => <IonIcon name="cube-outline" {...p} />;
+export const BarChart2 = (p) => <IonIcon name="bar-chart-outline" {...p} />;
+export const Banknote = (p) => <IonIcon name="cash-outline" {...p} />;
+export const Info = (p) => <IonIcon name="information-circle-outline" {...p} />;
+export const Check = (p) => <IonIcon name="checkmark-outline" {...p} />;
+
+export const Wheat = (p) => <IonIcon name="leaf-outline" {...p} />;
+export const Bean = (p) => <IonIcon name="ellipse-outline" {...p} />;
+export const Coffee = (p) => <IonIcon name="cafe-outline" {...p} />;
+export const Banana = (p) => <IonIcon name="moon-outline" {...p} />;
+export const Nut = (p) => <IonIcon name="disc-outline" {...p} />;
+export const TreeDeciduous = (p) => <IonIcon name="leaf-outline" {...p} />;
+export const LeafyGreen = (p) => <IonIcon name="leaf-outline" {...p} />;
+export const Sprout = (p) => <IonIcon name="leaf-outline" {...p} />;
+
+export const TrendingDown = (p) => <IonIcon name="trending-down-outline" {...p} />;
+export const Minus = (p) => <IonIcon name="remove-outline" {...p} />;
+export const Plus = (p) => <IonIcon name="add-outline" {...p} />;
+export const Activity = (p) => <IonIcon name="pulse-outline" {...p} />;
+export const Clock = (p) => <IonIcon name="time-outline" {...p} />;
+export const ArrowUpRight = (p) => <IonIcon name="arrow-up-outline" {...p} />;
+export const ArrowDownRight = (p) => <IonIcon name="arrow-down-outline" {...p} />;
+export const RefreshCw = (p) => <IonIcon name="refresh-outline" {...p} />;
+export const ChevronRight = (p) => <IonIcon name="chevron-forward-outline" {...p} />;
+

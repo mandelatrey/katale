@@ -14,7 +14,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "chart.js": "^4.4.1",
     "class-variance-authority": "^0.7.1",
-    "lucide-react": "^0.575.0",
+    "ionicons": "^8.0.13",
     "ol": "^9.2.4",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",

@@ -24,7 +24,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuCheckboxItem,
 } from './components/ui/dropdown-menu';
-import { ChevronDown, List, Navigation, TriangleAlert, MapPin, Store, LayoutGrid, Leaf, Receipt, MessageCircle, MoreHorizontal, Truck, Package, CreditCard, BarChart2, FileText, Users, Bell, Settings, LogOut } from 'lucide-react';
+import { ChevronDown, List, Navigation, TriangleAlert, MapPin, Store, LayoutGrid, Leaf, Receipt, MessageCircle, MoreHorizontal, Truck, Package, CreditCard, BarChart2, FileText, Users, Bell, Settings, LogOut } from './components/Icons';
 import { commodities, regions } from './constants';
 import { useIsMobile } from './hooks/use-mobile';
 
@@ -395,35 +395,37 @@ function App() {
             </button>
           </div>
 
-          {/* Region selector dropdown */}
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <div
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 12, cursor: 'pointer', userSelect: 'none' }}
+          {/* Region selector dropdown - only show in map view */}
+          {activeView === 'map' && (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 12, cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <span style={{ fontSize: 12, color: '#6b7280' }}>Prices for: <span style={{ color: '#374151', fontWeight: 500 }}>{selectedRegion === 'All' ? 'All Regions' : selectedRegion}</span></span>
+                  <ChevronDown style={{ width: 14, height: 14, color: '#9ca3af' }} />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                style={{ width: 200, zIndex: 1100, backgroundColor: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,.10)', padding: '6px', fontFamily: 'inherit' }}
               >
-                <span style={{ fontSize: 12, color: '#6b7280' }}>Prices for: <span style={{ color: '#374151', fontWeight: 500 }}>{selectedRegion === 'All' ? 'All Regions' : selectedRegion}</span></span>
-                <ChevronDown style={{ width: 14, height: 14, color: '#9ca3af' }} />
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              style={{ width: 200, zIndex: 1100, backgroundColor: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,.10)', padding: '6px', fontFamily: 'inherit' }}
-            >
-              <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Filter by Region</div>
-              <DropdownMenuRadioGroup value={selectedRegion} onValueChange={setSelectedRegion}>
-                {regions.map(r => (
-                  <DropdownMenuRadioItem
-                    key={r}
-                    value={r}
-                    style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
-                    className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#2D9F6F]"
-                  >
-                    {r === 'All' ? 'All Regions' : r}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Filter by Region</div>
+                <DropdownMenuRadioGroup value={selectedRegion} onValueChange={setSelectedRegion}>
+                  {regions.map(r => (
+                    <DropdownMenuRadioItem
+                      key={r}
+                      value={r}
+                      style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
+                      className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#2D9F6F]"
+                    >
+                      {r === 'All' ? 'All Regions' : r}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {/* Search input */}
           <div style={{ display: 'flex', gap: 8 }}>
@@ -452,7 +454,8 @@ function App() {
         </div>
 
         {/* ── Scrollable content ── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}>
+          <div style={{ height: 16, flexShrink: 0 }} />
           {error && (
             <div style={{ backgroundColor: '#fef2f2', color: '#dc2626', padding: 12, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, marginBottom: 16, border: '1px solid #fee2e2' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><TriangleAlert size={16} /> {error}</span>
@@ -462,33 +465,35 @@ function App() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>Track stops</span>
-            <span style={{ backgroundColor: '#fef9c3', color: '#92400e', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4 }}>{filteredMarkets.length}</span>
+            <span style={{ backgroundColor: '#fef9c3', color: '#92400e', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>{filteredMarkets.length}</span>
           </div>
 
-          {/* Commodity pills */}
-          <div style={{ marginBottom: 20 }}>
-            <h3 style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Select Commodity</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {commodities.map(c => (
-                <button
-                  key={c.key}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 4,
-                    padding: '4px 10px', borderRadius: 6,
-                    border: selectedCommodity === c.key ? '1px solid rgba(45, 159, 111, 0.3)' : '1px solid #e5e7eb',
-                    backgroundColor: selectedCommodity === c.key ? '#e6f2ea' : '#fff',
-                    color: selectedCommodity === c.key ? '#064e3b' : '#4b5563',
-                    fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onClick={() => handleCommodityChange(c.key)}
-                >
-                  <span style={{ fontSize: 12, lineHeight: 1 }}>{c.icon}</span>
-                  {c.label}
-                </button>
-              ))}
+          {/* Commodity pills - only show in map view */}
+          {activeView === 'map' && (
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Select Commodity</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {commodities.map(c => (
+                  <button
+                    key={c.key}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '4px 10px', borderRadius: 6,
+                      border: selectedCommodity === c.key ? '1px solid rgba(45, 159, 111, 0.3)' : '1px solid #e5e7eb',
+                      backgroundColor: selectedCommodity === c.key ? '#e6f2ea' : '#fff',
+                      color: selectedCommodity === c.key ? '#064e3b' : '#4b5563',
+                      fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onClick={() => handleCommodityChange(c.key)}
+                  >
+                    <span style={{ fontSize: 12, lineHeight: 1 }}>{c.icon}</span>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Region filter */}
           <div style={{ marginBottom: 20 }}>
@@ -514,7 +519,7 @@ function App() {
           </div>
 
           {/* Location */}
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 10, margin: '0 -20px 20px -20px', padding: '12px 20px 12px 20px', borderBottom: '1px solid currentColor', borderBottomColor: 'rgba(0,0,0,0.05)' }}>
             <h3 style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Your Location</h3>
             <button
               style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#2D9F6F', color: '#fff', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: 'none', fontFamily: 'inherit', transition: 'background 0.15s ease' }}
@@ -525,7 +530,7 @@ function App() {
               <MapPin size={16} /> Find nearest markets
             </button>
             {nearestMarkets.length > 0 && (
-              <p style={{ fontSize: 10, color: '#6b7280', textAlign: 'center', marginTop: 6 }}>
+              <p style={{ fontSize: 10, color: '#6b7280', textAlign: 'center', marginTop: 8, marginBottom: 0, fontFamily: 'var(--font-mono)' }}>
                 Found {nearestMarkets.length} markets within 50 km
               </p>
             )}
@@ -648,70 +653,72 @@ function App() {
               </div>
             </div>
 
-            {/* ── Row 2: Sub-bar — Commodity + Region selectors ── */}
-            <div className="mobile-sub-bar">
-              <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 500, whiteSpace: 'nowrap' }}>Viewing:</div>
+            {/* ── Row 2: Sub-bar — Commodity + Region selectors (only show in commodities tab) ── */}
+            {activeTab === 'commodities' && (
+              <div className="mobile-sub-bar">
+                <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 500, whiteSpace: 'nowrap' }}>Viewing:</div>
 
-              {/* Commodity Dropdown */}
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <button className="mobile-sub-btn">
-                    <span style={{ fontSize: 13, lineHeight: 1 }}>{currentCommodity?.icon}</span>
-                    <span>{currentCommodity?.label}</span>
-                    <ChevronDown className="h-3 w-3 opacity-50" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  style={{ width: 210, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'hidden' }}
-                >
-                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Select Commodity</div>
-                  <DropdownMenuRadioGroup value={selectedCommodity} onValueChange={handleCommodityChange}>
-                    {commodities.map(c => (
-                      <DropdownMenuRadioItem
-                        key={c.key}
-                        value={c.key}
-                        style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
-                        className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#2D9F6F]"
-                      >
-                        <span className="flex items-center" style={{ marginRight: '8px' }}>{c.icon}</span>
-                        <span>{c.label}</span>
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                {/* Commodity Dropdown */}
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <button className="mobile-sub-btn">
+                      <span style={{ fontSize: 13, lineHeight: 1 }}>{currentCommodity?.icon}</span>
+                      <span>{currentCommodity?.label}</span>
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    style={{ width: 210, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'hidden' }}
+                  >
+                    <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Select Commodity</div>
+                    <DropdownMenuRadioGroup value={selectedCommodity} onValueChange={handleCommodityChange}>
+                      {commodities.map(c => (
+                        <DropdownMenuRadioItem
+                          key={c.key}
+                          value={c.key}
+                          style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
+                          className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#2D9F6F]"
+                        >
+                          <span className="flex items-center" style={{ marginRight: '8px' }}>{c.icon}</span>
+                          <span>{c.label}</span>
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-              <span style={{ color: '#d1d5db', fontSize: 14, userSelect: 'none' }}>·</span>
+                <span style={{ color: '#d1d5db', fontSize: 14, userSelect: 'none' }}>·</span>
 
-              {/* Region Dropdown */}
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <button className="mobile-sub-btn">
-                    <span>{selectedRegion === 'All' ? 'All Regions' : selectedRegion}</span>
-                    <ChevronDown className="h-3 w-3 opacity-50" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  style={{ width: 170, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'hidden' }}
-                >
-                  <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Filter by Region</div>
-                  <DropdownMenuRadioGroup value={selectedRegion} onValueChange={setSelectedRegion}>
-                    {regions.map(r => (
-                      <DropdownMenuRadioItem
-                        key={r}
-                        value={r}
-                        style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
-                        className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#2D9F6F]"
-                      >
-                        {r === 'All' ? 'All Regions' : r}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                {/* Region Dropdown */}
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <button className="mobile-sub-btn">
+                      <span>{selectedRegion === 'All' ? 'All Regions' : selectedRegion}</span>
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    style={{ width: 170, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'hidden' }}
+                  >
+                    <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Filter by Region</div>
+                    <DropdownMenuRadioGroup value={selectedRegion} onValueChange={setSelectedRegion}>
+                      {regions.map(r => (
+                        <DropdownMenuRadioItem
+                          key={r}
+                          value={r}
+                          style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
+                          className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#2D9F6F]"
+                        >
+                          {r === 'All' ? 'All Regions' : r}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
 
             {activeTab === 'commodities' && (
               <>
@@ -761,11 +768,11 @@ function App() {
             {/* ── Mobile Markets Bottom Sheet ── */}
             <div
               style={{
-                position: 'absolute',
-                bottom: 64,
+                position: 'fixed',
+                bottom: 0,
                 left: 0,
                 right: 0,
-                height: 'min(calc(85vh - 64px), 560px)',
+                height: 'calc(min(85vh, 560px) + 64px)',
                 zIndex: 550,
                 background: '#fff',
                 borderRadius: '20px 20px 0 0',
@@ -775,6 +782,7 @@ function App() {
                 transform: mobileDrawerOpen ? 'translateY(0)' : 'translateY(100%)',
                 transition: 'transform 0.38s cubic-bezier(0.32,0.72,0,1)',
                 overflow: 'hidden',
+                paddingBottom: 64,
               }}
             >
               {/* Handle */}
@@ -787,7 +795,7 @@ function App() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Markets</span>
-                    <span style={{ backgroundColor: '#fef9c3', color: '#92400e', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4 }}>{filteredMarkets.length}</span>
+                    <span style={{ backgroundColor: '#fef9c3', color: '#92400e', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>{filteredMarkets.length}</span>
                   </div>
                   <button
                     onClick={handleFindNearest}
@@ -938,28 +946,40 @@ function App() {
             <nav className="mobile-tab-bar">
               <button
                 className={`mobile-tab-item${activeTab === 'dashboard' ? ' active' : ''}`}
-                onClick={() => setActiveTab('dashboard')}
+                onClick={() => {
+                  setActiveTab('dashboard');
+                  setSelectedMarket(null);
+                }}
               >
                 <LayoutGrid size={20} color={activeTab === 'dashboard' ? '#2D8C5E' : '#9CA3AF'} />
                 <span className="mobile-tab-label">Dashboard</span>
               </button>
               <button
                 className={`mobile-tab-item${activeTab === 'commodities' ? ' active' : ''}`}
-                onClick={() => setActiveTab('commodities')}
+                onClick={() => {
+                  setActiveTab('commodities');
+                  setSelectedMarket(null);
+                }}
               >
                 <Leaf size={20} color={activeTab === 'commodities' ? '#2D8C5E' : '#9CA3AF'} />
                 <span className="mobile-tab-label">Commodities</span>
               </button>
               <button
                 className={`mobile-tab-item${activeTab === 'transactions' ? ' active' : ''}`}
-                onClick={() => setActiveTab('transactions')}
+                onClick={() => {
+                  setActiveTab('transactions');
+                  setSelectedMarket(null);
+                }}
               >
                 <Receipt size={20} color={activeTab === 'transactions' ? '#2D8C5E' : '#9CA3AF'} />
                 <span className="mobile-tab-label">Transactions</span>
               </button>
               <button
                 className={`mobile-tab-item${activeTab === 'chat' ? ' active' : ''}`}
-                onClick={() => setActiveTab('chat')}
+                onClick={() => {
+                  setActiveTab('chat');
+                  setSelectedMarket(null);
+                }}
               >
                 <MessageCircle size={20} color={activeTab === 'chat' ? '#2D8C5E' : '#9CA3AF'} />
                 {unreadMessages > 0 && (
@@ -969,7 +989,10 @@ function App() {
               </button>
               <button
                 className={`mobile-tab-item${moreSheetOpen ? ' active' : ''}`}
-                onClick={() => setMoreSheetOpen(o => !o)}
+                onClick={() => {
+                  setMoreSheetOpen(o => !o);
+                  setSelectedMarket(null);
+                }}
               >
                 <MoreHorizontal size={20} color={moreSheetOpen ? '#2D8C5E' : '#9CA3AF'} />
                 <span className="mobile-tab-label">More</span>

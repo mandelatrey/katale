@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { fromLonLat } from 'ol/proj';
 import PriceChart from './PriceChart';
 import TransportCalculator from './TransportCalculator';
-import { Store, Banknote, Info, Truck, TrendingUp } from 'lucide-react';
+import { Store, Banknote, Info, Truck, TrendingUp } from './Icons';
 import { commodities as allCommodities } from '../constants';
 
 export default function Popup({ map, market, prices, onClose, allMarkets, isMobile }) {
@@ -85,9 +85,9 @@ export default function Popup({ map, market, prices, onClose, allMarkets, isMobi
     commodityName: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#111827', marginBottom: 6 },
     priceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10, paddingTop: 6, borderTop: '1px dashed #e5e7eb' },
     priceLabel: { color: '#9ca3af', marginRight: 3 },
-    priceRetail: { color: '#374151', fontWeight: 300, fontFamily: 'var(--font-mono)' },
-    priceWholesale: { color: '#2563eb', fontWeight: 300, fontFamily: 'var(--font-mono)' },
-    priceAvg: { color: '#2D9F6F', fontWeight: 300, fontFamily: 'var(--font-mono)' },
+    priceRetail: { color: '#111827', fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11 },
+    priceWholesale: { color: '#1d4ed8', fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11 },
+    priceAvg: { color: '#15803d', fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11 },
       // pastel green ↑
   };
 
@@ -174,7 +174,7 @@ export default function Popup({ map, market, prices, onClose, allMarkets, isMobi
               ].map(([label, val]) => (
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#9ca3af' }}>{label}</span>
-                  <span style={{ color: '#111827', fontWeight: 500 }}>{val}</span>
+                  <span style={{ color: '#111827', fontWeight: 500, fontFamily: 'var(--font-mono)' }}>{val}</span>
                 </div>
               ))}
             </div>

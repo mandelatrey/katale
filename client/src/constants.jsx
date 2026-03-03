@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wheat, Bean, Coffee, Banana, Nut, TreeDeciduous, LeafyGreen, Sprout, Leaf } from 'lucide-react';
+import { Wheat, Bean, Coffee, Banana, Nut, TreeDeciduous, LeafyGreen, Sprout, Leaf } from './components/Icons';
 
 // Shared constants used across components (Fix #4)
 export const commodities = [

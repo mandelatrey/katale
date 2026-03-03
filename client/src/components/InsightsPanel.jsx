@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { X, TrendingUp } from 'lucide-react';
+import { X, TrendingUp } from './Icons';
 
 export default function InsightsPanel({ onClose }) {
   const [insights, setInsights] = useState([]);

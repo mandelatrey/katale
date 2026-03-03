@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Truck, Factory, CreditCard, Receipt, FileText, Settings, Bell, MessageSquare, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Truck, Factory, CreditCard, Receipt, FileText, Settings, Bell, MessageSquare, LogOut } from './Icons';
 
 export default function NavigationSidebar({ activeView = 'map', onNavigate }) {
   // Map nav labels to view keys

@@ -92,14 +92,14 @@ export default function PriceChart({ prices, isMobile, currency = 'UGX' }) {
           x: {
             ticks: {
               maxTicksLimit: isMobile ? 5 : 7,
-              font: { size: 10, family: 'Inter' },
+              font: { size: 10, family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' },
               color: '#9ca3af'
             },
             grid: { display: false }
           },
           y: {
             ticks: {
-              font: { size: 10, family: 'Inter' },
+              font: { size: 10, family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' },
               color: '#9ca3af',
               callback: (val) => val.toLocaleString()
             },

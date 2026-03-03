@@ -4,7 +4,7 @@ import {
   Users, Truck, CreditCard, TrendingUp, TrendingDown, Minus,
   Activity, Package, MapPin, Clock, ArrowUpRight, ArrowDownRight,
   BarChart2, RefreshCw, ChevronRight
-} from 'lucide-react';
+} from './Icons';
 import { commodities } from '../constants';
 
 const API_URL = '/api';
@@ -42,7 +42,7 @@ function SummaryCard({ icon, label, value, sub, trend, color = '#2D9F6F', loadin
         {!trendNeutral && (
           <span style={{
             display: 'flex', alignItems: 'center', gap: 3,
-            fontSize: 11, fontWeight: 600,
+            fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono)',
             color: trendUp ? '#2D9F6F' : '#dc2626',
             backgroundColor: trendUp ? '#e6f2ea' : '#fef2f2',
             padding: '2px 7px', borderRadius: 20,
@@ -57,7 +57,7 @@ function SummaryCard({ icon, label, value, sub, trend, color = '#2D9F6F', loadin
           <div className="dash-skeleton" style={{ width: '60%', height: 28, borderRadius: 6 }} />
         </div>
       ) : (
-        <div style={{ fontSize: 28, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px', lineHeight: 1 }}>
+        <div style={{ fontSize: 28, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px', lineHeight: 1, fontFamily: 'var(--font-mono)' }}>
           {value}
         </div>
       )}
@@ -162,12 +162,12 @@ function PriceTrendChart({ selectedCommodities, currency, isMobile = false }) {
         },
         scales: {
           x: {
-            ticks: { maxTicksLimit: 8, font: { size: 10, family: 'Inter' }, color: '#9ca3af' },
+            ticks: { maxTicksLimit: 8, font: { size: 10, family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }, color: '#9ca3af' },
             grid: { display: false },
           },
           y: {
             ticks: {
-              font: { size: 10, family: 'Inter' }, color: '#9ca3af',
+              font: { size: 10, family: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }, color: '#9ca3af',
               callback: v => currency === 'USD' ? `$${v.toFixed(2)}` : v.toLocaleString(),
             },
             grid: { color: '#f3f4f6' },
@@ -221,7 +221,7 @@ function PriceTrendChart({ selectedCommodities, currency, isMobile = false }) {
 }
 
 // ─── Activity Feed Item ──────────────────────────────────────────────────────
-function ActivityItem({ icon, title, meta, time, color = '#6b7280', badge }) {
+function ActivityItem({ icon, title, meta, time, color = '#6b7280', badge, price, currency }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 12,
@@ -250,7 +250,18 @@ function ActivityItem({ icon, title, meta, time, color = '#6b7280', badge }) {
             </span>
           )}
         </div>
-        <div style={{ fontSize: 11, color: '#6b7280' }}>{meta}</div>
+        <div style={{ fontSize: 11, color: '#6b7280' }}>
+          {meta}
+          {price && (
+            <>
+              {' · '}
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 11, color: '#111827' }}>
+                {price}
+              </span>
+              {' / kg'}
+            </>
+          )}
+        </div>
       </div>
       <div style={{ fontSize: 10, color: '#9ca3af', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 2 }}>
         {time}
@@ -312,7 +323,8 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
       .map(p => ({
         id: p._id,
         title: `${(p.commodity || '').replace(/_/g, ' ')} — ${p.market?.name || p.marketInfo?.name || 'Market'}`,
-        meta: `${p.market?.district || p.marketInfo?.district || ''} · ${currency === 'USD' ? `$${(p.price / 3700).toFixed(2)}` : `UGX ${Math.round(p.price).toLocaleString()}`} / kg`,
+        meta: `${p.market?.district || p.marketInfo?.district || ''}`,
+        price: currency === 'USD' ? `$${(p.price / 3700).toFixed(2)}` : `UGX ${Math.round(p.price).toLocaleString()}`,
         time: timeAgo(p.recordedAt),
         commodity: p.commodity,
       }));
@@ -330,15 +342,39 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
     <div className="dashboard">
       {/* ── Header ── */}
       <div className="dash-header">
-        <div>
-          <h1 className="dash-title">Dashboard</h1>
-          <p className="dash-subtitle">Uganda commodity market overview · {new Date().toLocaleDateString('en-UG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <h1 className="dash-title" style={{ marginBottom: 2 }}>Dashboard</h1>
+          <p className="dash-subtitle" style={{ marginTop: 0 }}>
+            Uganda commodity market overview · <span style={{ fontFamily: 'monospace', fontSize: '0.9em', color: '#4ade80' }}>{new Date().toLocaleDateString('en-CA')}</span>
+          </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 11, color: '#9ca3af', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <RefreshCw size={11} />
-            Live data
-          </span>
+          <button 
+            style={{ 
+              fontSize: 11, 
+              color: '#6b7280', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 6,
+              background: 'transparent',
+              border: '1px solid #e5e7eb',
+              borderRadius: 6,
+              padding: '6px 12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f3f4f6';
+              e.currentTarget.style.borderColor = '#d1d5db';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = '#e5e7eb';
+            }}
+          >
+            <RefreshCw size={12} />
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -466,6 +502,8 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
                     icon={commInfo?.icon || <Package size={16} />}
                     title={item.title}
                     meta={item.meta}
+                    price={item.price}
+                    currency={currency}
                     time={item.time}
                     color={col}
                     badge="Price update"
@@ -477,7 +515,7 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
 
           {recentActivity.length > 0 && (
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6', textAlign: 'center' }}>
-              <span style={{ fontSize: 11, color: '#9ca3af' }}>Showing {recentActivity.length} most recent entries</span>
+              <span style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'var(--font-mono)' }}>Showing {recentActivity.length} most recent entries</span>
             </div>
           )}
         </div>
@@ -500,12 +538,12 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
               <div key={region} style={{ flex: 1, minWidth: 120 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{region}</span>
-                  <span style={{ fontSize: 11, color: '#6b7280' }}>{count} markets</span>
+                  <span style={{ fontSize: 11, color: '#6b7280', fontFamily: 'var(--font-mono)' }}>{count} markets</span>
                 </div>
                 <div style={{ width: '100%', height: 6, backgroundColor: '#f3f4f6', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{ width: `${pct}%`, height: '100%', backgroundColor: '#2D9F6F', borderRadius: 3, transition: 'width 0.8s ease' }} />
                 </div>
-                <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 3 }}>{pct}% of total</div>
+                <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 3, fontFamily: 'var(--font-mono)' }}>{pct}% of total</div>
               </div>
             );
           })}
