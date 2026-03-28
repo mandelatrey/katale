@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Price from '../models/Price.js';
 import Market from '../models/Market.js';
 
@@ -35,7 +36,7 @@ router.get('/history/:commodity', async (req, res) => {
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     
     const match = { commodity, recordedAt: { $gte: startDate } };
-    if (marketId) match.market = marketId;
+    if (marketId) match.market = new mongoose.Types.ObjectId(marketId);
     
     const prices = await Price.aggregate([
       { $match: match },
@@ -58,18 +59,27 @@ router.get('/history/:commodity', async (req, res) => {
   }
 });
 
-// Get prices for a specific market
+// Get prices for a specific market — returns latest N records per commodity
+// so the popup always has data regardless of when the DB was seeded.
 router.get('/market/:marketId', async (req, res) => {
   try {
     const { marketId } = req.params;
-    const { days = 7 } = req.query;
-    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    
-    const prices = await Price.find({
-      market: marketId,
-      recordedAt: { $gte: startDate }
-    }).sort({ recordedAt: -1 });
-    
+    const { limit = 30 } = req.query;
+
+    // Get the most recent `limit` prices per commodity for this market
+    const prices = await Price.aggregate([
+      { $match: { market: new mongoose.Types.ObjectId(marketId) } },
+      { $sort: { recordedAt: -1 } },
+      { $group: {
+          _id: '$commodity',
+          records: { $push: '$$ROOT' }
+      }},
+      { $project: { records: { $slice: ['$records', Number(limit)] } } },
+      { $unwind: '$records' },
+      { $replaceRoot: { newRoot: '$records' } },
+      { $sort: { commodity: 1, recordedAt: -1 } }
+    ]);
+
     res.json(prices);
   } catch (error) {
     res.status(500).json({ error: error.message });

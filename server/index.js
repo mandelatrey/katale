@@ -23,7 +23,12 @@ app.get("/api/health", (req, res) => {
 });
 
 function startServer(port) {
-  if (process.env.VERCEL) return; // Vercel handles starting the server internally
+  if (process.env.VERCEL) {
+    console.log(
+      "Vercel environment detected. Internal server listener skipped.",
+    );
+    return;
+  }
 
   const server = app.listen(port, () => {
     console.log(`Server running on port ${port}`);
@@ -50,6 +55,10 @@ mongoose
     console.log("Connected to MongoDB");
     startServer(PORT);
   })
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .catch((err) => {
+    console.error("CRITICAL: MongoDB connection error:", err.message);
+    console.error("The server requires a running MongoDB instance to start.");
+    process.exit(1); // Exit with error code to notify concurrently/watchers
+  });
 
 export default app;

@@ -44,7 +44,7 @@ export default function MarketList({ markets, prices, selectedMarket, onSelect, 
             onClick={() => onSelect(m)}
             style={{
               borderRadius: 12,
-              border: isSelected ? '1px solid rgba(45, 159, 111, 0.3)' : '1px solid #e5e7eb',
+              border: isSelected ? '1px solid rgba(26, 107, 48, 0.3)' : '1px solid #e5e7eb',
               padding: '12px 14px',
               cursor: 'pointer',
               backgroundColor: isSelected ? '#e6f2ea' : '#fff',

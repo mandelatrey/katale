@@ -82,7 +82,7 @@ function createBaseLayer(type) {
 function getPriceLevelColor(price, priceRange) {
   if (!priceRange || price === 'N/A' || price == null) return '#6b7280'; // gray – no data
   const ratio = (price - priceRange.min) / (priceRange.max - priceRange.min || 1);
-  if (ratio <= 0.33) return '#2D9F6F'; // green – low (best deal)
+  if (ratio <= 0.33) return '#1f8a3e'; // green – low (best deal)
   if (ratio <= 0.66) return '#d97706'; // amber – medium
   return '#dc2626';                    // red – high
 }
@@ -95,7 +95,7 @@ function getMarkerStyle(price, priceRange, isSelected) {
   const bg = getPriceLevelColor(typeof price === 'number' ? price : 'N/A', priceRange);
   
   // Border adjustments: 1px thin, 30% opacity on active (isSelected) states
-  const strokeColor = isSelected ? 'rgba(45, 159, 111, 0.3)' : 'rgba(255, 255, 255, 0.8)';
+  const strokeColor = isSelected ? 'rgba(26, 107, 48, 0.3)' : 'rgba(255, 255, 255, 0.8)';
   const strokeWidth = 1;
 
   // Estimate text width (rough approximation for 11px sans-serif)
@@ -375,13 +375,17 @@ function App() {
 
       {/* ── Dashboard View — always mounted, hidden via CSS ── */}
       {!isMobile && (
-        <div style={{ display: activeView === 'dashboard' ? 'contents' : 'none' }}>
-          <Dashboard markets={markets} currency={currency} />
+        <div style={{ display: (activeView === 'dashboard' || activeView === 'carriers') ? 'contents' : 'none' }}>
+          <Dashboard 
+            markets={markets} 
+            currency={currency} 
+            initialSection={activeView === 'carriers' ? 'carriers' : 'overview'} 
+          />
         </div>
       )}
 
       {/* ── Map View — always mounted, hidden via CSS so #map is never destroyed ── */}
-      <div style={{ display: (!isMobile && activeView === 'dashboard') ? 'none' : 'contents' }}>
+      <div style={{ display: (!isMobile && (activeView === 'dashboard' || activeView === 'carriers')) ? 'none' : 'contents' }}>
       <div className="sidebar">
         {/* ── Sidebar Header (fixed top) ── */}
         <div style={{ flexShrink: 0, backgroundColor: '#fff', padding: '20px 20px 12px', borderBottom: '1px solid #f3f4f6' }}>
@@ -417,7 +421,7 @@ function App() {
                       key={r}
                       value={r}
                       style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
-                      className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#2D9F6F]"
+                      className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#1a6b30]"
                     >
                       {r === 'All' ? 'All Regions' : r}
                     </DropdownMenuRadioItem>
@@ -479,9 +483,9 @@ function App() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 4,
                       padding: '4px 10px', borderRadius: 6,
-                      border: selectedCommodity === c.key ? '1px solid rgba(45, 159, 111, 0.3)' : '1px solid #e5e7eb',
+                      border: selectedCommodity === c.key ? '1px solid rgba(26, 107, 48, 0.3)' : '1px solid #e5e7eb',
                       backgroundColor: selectedCommodity === c.key ? '#e6f2ea' : '#fff',
-                      color: selectedCommodity === c.key ? '#064e3b' : '#4b5563',
+                      color: selectedCommodity === c.key ? '#0d3b1a' : '#4b5563',
                       fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
                       transition: 'all 0.15s ease',
                     }}
@@ -504,9 +508,9 @@ function App() {
                   key={r}
                   style={{
                     padding: '4px 10px', borderRadius: 6,
-                    border: selectedRegion === r ? '1px solid rgba(45, 159, 111, 0.3)' : '1px solid #e5e7eb',
+                    border: selectedRegion === r ? '1px solid rgba(26, 107, 48, 0.3)' : '1px solid #e5e7eb',
                     backgroundColor: selectedRegion === r ? '#e6f2ea' : '#fff',
-                    color: selectedRegion === r ? '#064e3b' : '#4b5563',
+                    color: selectedRegion === r ? '#0d3b1a' : '#4b5563',
                     fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
                     transition: 'all 0.15s ease',
                   }}
@@ -522,9 +526,9 @@ function App() {
           <div style={{ position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 10, margin: '0 -20px 20px -20px', padding: '12px 20px 12px 20px', borderBottom: '1px solid currentColor', borderBottomColor: 'rgba(0,0,0,0.05)' }}>
             <h3 style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Your Location</h3>
             <button
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#2D9F6F', color: '#fff', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: 'none', fontFamily: 'inherit', transition: 'background 0.15s ease' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#268F62'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#2D9F6F'}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1f8a3e', color: '#fff', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: 'none', fontFamily: 'inherit', transition: 'background 0.15s ease' }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#1a6b30'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1f8a3e'}
               onClick={handleFindNearest}
             >
               <MapPin size={16} /> Find nearest markets
@@ -574,11 +578,16 @@ function App() {
                 <Dashboard markets={markets} currency={currency} isMobile={true} />
               </div>
             )}
+            {activeTab === 'carriers' && (
+              <div className="mobile-view-panel">
+                <Dashboard markets={markets} currency={currency} isMobile={true} initialSection="carriers" />
+              </div>
+            )}
             {activeTab === 'transactions' && (
               <div className="mobile-view-panel">
                 <div className="mobile-placeholder">
                   <div className="mobile-placeholder-icon">
-                    <Receipt size={28} color="#2D8C5E" />
+                    <Receipt size={28} color="#1a6b30" />
                   </div>
                   <div className="mobile-placeholder-title">Transactions</div>
                   <div className="mobile-placeholder-sub">Your trade records, shipment logs, and payment history will appear here.</div>
@@ -590,7 +599,7 @@ function App() {
               <div className="mobile-view-panel">
                 <div className="mobile-placeholder">
                   <div className="mobile-placeholder-icon">
-                    <MessageCircle size={28} color="#2D8C5E" />
+                    <MessageCircle size={28} color="#1a6b30" />
                   </div>
                   <div className="mobile-placeholder-title">Chat</div>
                   <div className="mobile-placeholder-sub">Message brokers, buyers, and carriers directly from the market map.</div>
@@ -618,7 +627,7 @@ function App() {
                         <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
                         <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
                       </svg>
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>{currentBaseLayer?.label}</span>
+                      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)' }}>{currentBaseLayer?.label}</span>
                       <ChevronDown className="h-3 w-3 opacity-60" />
                     </button>
                   </DropdownMenuTrigger>
@@ -626,25 +635,25 @@ function App() {
                     align="end"
                     style={{ width: 170, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'hidden' }}
                   >
-                    <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Base Map</div>
+                    <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 8px', borderBottom: '1px solid #f0f0f0', marginBottom: 4 }}>Base Map</div>
                     <DropdownMenuRadioGroup value={baseLayerType} onValueChange={value => setBaseLayerType(value)}>
                       {BASE_LAYERS.map(layer => (
                         <DropdownMenuRadioItem
                           key={layer.id}
                           value={layer.id}
-                          style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
-                          className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#2D9F6F]"
+                          style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: '#374151', borderRadius: 'var(--radius-sm)', padding: '6px 8px 6px 28px', cursor: 'pointer' }}
+                          className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#1a6b30]"
                         >
                           {layer.label}
                         </DropdownMenuRadioItem>
                       ))}
                     </DropdownMenuRadioGroup>
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator style={{ backgroundColor: '#f0f0f0', margin: '4px 0' }} />
                     <DropdownMenuCheckboxItem
                       checked={showMarkets}
                       onCheckedChange={value => setShowMarkets(Boolean(value))}
-                      style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
-                      className="focus:bg-[#e6f2ea]"
+                      style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: '#374151', borderRadius: 'var(--radius-sm)', padding: '6px 8px 6px 28px', cursor: 'pointer' }}
+                      className="focus:bg-[#e6f2ea] data-[state=checked]:text-[#1a6b30]"
                     >
                       Show markers
                     </DropdownMenuCheckboxItem>
@@ -678,7 +687,7 @@ function App() {
                           key={c.key}
                           value={c.key}
                           style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
-                          className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#2D9F6F]"
+                          className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#1a6b30]"
                         >
                           <span className="flex items-center" style={{ marginRight: '8px' }}>{c.icon}</span>
                           <span>{c.label}</span>
@@ -709,7 +718,7 @@ function App() {
                           key={r}
                           value={r}
                           style={{ fontSize: 12, fontWeight: 500, color: '#374151', borderRadius: 6, padding: '6px 8px 6px 28px', cursor: 'pointer' }}
-                          className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#2D9F6F]"
+                          className="focus:bg-[#e6f2ea] data-[state=checked]:font-semibold data-[state=checked]:text-[#1a6b30]"
                         >
                           {r === 'All' ? 'All Regions' : r}
                         </DropdownMenuRadioItem>
@@ -724,14 +733,14 @@ function App() {
               <>
                 {/* ── Mobile Markets Drawer Toggle Button ── */}
             <button
-              onClick={() => setMobileDrawerOpen(o => !o)}
+              onClick={() => { setMobileDrawerOpen(o => !o); setSelectedMarket(null); }}
               style={{
                 position: 'absolute',
                 bottom: mobileDrawerOpen ? 'calc(min(85vh, 560px) + 76px)' : 76,
                 left: '50%',
                 transform: 'translateX(-50%)',
                 zIndex: 600,
-                background: '#2D9F6F',
+                background: '#1f8a3e',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 'var(--radius-xl)',
@@ -742,7 +751,7 @@ function App() {
                 fontFamily: 'inherit',
                 fontSize: 13,
                 fontWeight: 600,
-                boxShadow: '0 4px 16px rgba(45,159,111,0.35)',
+                boxShadow: '0 4px 16px rgba(26,107,48,0.35)',
                 cursor: 'pointer',
                 transition: 'bottom 0.38s cubic-bezier(0.32,0.72,0,1), background 0.15s ease',
               }}
@@ -799,7 +808,7 @@ function App() {
                   </div>
                   <button
                     onClick={handleFindNearest}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#2D9F6F', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', padding: '6px 12px', fontSize: 11, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1f8a3e', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', padding: '6px 12px', fontSize: 11, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}
                   >
                     <Navigation style={{ width: 12, height: 12 }} /> Find Nearest
                   </button>
@@ -824,7 +833,7 @@ function App() {
               <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}>
                 {loading ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, color: '#9ca3af' }}>
-                    <div style={{ width: 22, height: 22, border: '2px solid #e5e7eb', borderTopColor: '#2D9F6F', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: 10 }} />
+                    <div style={{ width: 22, height: 22, border: '2px solid #e5e7eb', borderTopColor: '#1f8a3e', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: 10 }} />
                     <div style={{ fontSize: 12 }}>Loading prices…</div>
                   </div>
                 ) : (
@@ -864,7 +873,7 @@ function App() {
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                             <div style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: isSelected ? 'rgba(45,159,111,0.12)' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <Store style={{ width: 14, height: 14, color: isSelected ? '#2D9F6F' : '#6b7280' }} />
+                              <Store style={{ width: 14, height: 14, color: isSelected ? '#1f8a3e' : '#6b7280' }} />
                             </div>
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
@@ -872,7 +881,7 @@ function App() {
                             </div>
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 300, color: price === 'N/A' ? '#9ca3af' : '#2D8C5E' }} className="price-mono">{fmtPrice(price)}</div>
+                            <div style={{ fontSize: 13, fontWeight: 300, color: price === 'N/A' ? '#9ca3af' : '#1a6b30' }} className="price-mono">{fmtPrice(price)}</div>
                             {price !== 'N/A' && prices[0]?.unit && <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>/{prices[0].unit}</div>}
                           </div>
                         </div>
@@ -922,7 +931,7 @@ function App() {
                       setActiveTab(label.toLowerCase().replace(/\s+/g, '-'));
                     }}
                   >
-                    <Icon size={22} color="#2D8C5E" />
+                    <Icon size={22} color="#1a6b30" />
                     <span className="mobile-more-item-label">{label}</span>
                   </button>
                 ))}
@@ -951,7 +960,7 @@ function App() {
                   setSelectedMarket(null);
                 }}
               >
-                <LayoutGrid size={20} color={activeTab === 'dashboard' ? '#2D8C5E' : '#9CA3AF'} />
+                <LayoutGrid size={20} color={activeTab === 'dashboard' ? '#1a6b30' : '#9CA3AF'} />
                 <span className="mobile-tab-label">Dashboard</span>
               </button>
               <button
@@ -961,7 +970,7 @@ function App() {
                   setSelectedMarket(null);
                 }}
               >
-                <Leaf size={20} color={activeTab === 'commodities' ? '#2D8C5E' : '#9CA3AF'} />
+                <Leaf size={20} color={activeTab === 'commodities' ? '#1a6b30' : '#9CA3AF'} />
                 <span className="mobile-tab-label">Commodities</span>
               </button>
               <button
@@ -971,7 +980,7 @@ function App() {
                   setSelectedMarket(null);
                 }}
               >
-                <Receipt size={20} color={activeTab === 'transactions' ? '#2D8C5E' : '#9CA3AF'} />
+                <Receipt size={20} color={activeTab === 'transactions' ? '#1a6b30' : '#9CA3AF'} />
                 <span className="mobile-tab-label">Transactions</span>
               </button>
               <button
@@ -981,7 +990,7 @@ function App() {
                   setSelectedMarket(null);
                 }}
               >
-                <MessageCircle size={20} color={activeTab === 'chat' ? '#2D8C5E' : '#9CA3AF'} />
+                <MessageCircle size={20} color={activeTab === 'chat' ? '#1a6b30' : '#9CA3AF'} />
                 {unreadMessages > 0 && (
                   <span className="mobile-tab-badge">{unreadMessages}</span>
                 )}
@@ -994,7 +1003,7 @@ function App() {
                   setSelectedMarket(null);
                 }}
               >
-                <MoreHorizontal size={20} color={moreSheetOpen ? '#2D8C5E' : '#9CA3AF'} />
+                <MoreHorizontal size={20} color={moreSheetOpen ? '#1a6b30' : '#9CA3AF'} />
                 <span className="mobile-tab-label">More</span>
               </button>
             </nav>
@@ -1002,46 +1011,48 @@ function App() {
         )}
 
         {!isMobile && (
-          <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 400, width: 200 }}>
-            <div style={{ backgroundColor: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', padding: 12, boxShadow: '0 2px 8px rgba(0,0,0,.08)' }}>
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Base map</span>
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
+          <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 400 }}>
+            <div style={{ backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '10px 8px', fontFamily: 'Inter, -apple-system, sans-serif', width: 148, overflow: 'hidden' }}>
+              {/* Header */}
+              <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 8px 8px', borderBottom: '1px solid #f0f0f0', marginBottom: 4 }}>
+                Base Map
+              </div>
+
+              {/* Layer rows */}
+              {BASE_LAYERS.map(layer => {
+                const active = baseLayerType === layer.id;
+                return (
                   <button
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: 8, backgroundColor: '#fafafa', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', marginTop: 6, color: '#111827' }}
+                    key={layer.id}
+                    onClick={() => setBaseLayerType(layer.id)}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--text-xs)', fontWeight: active ? 'var(--weight-semibold)' : 'var(--weight-regular)', backgroundColor: active ? 'var(--green-100)' : 'transparent', color: active ? 'var(--green-900)' : '#374151', transition: 'background-color 0.1s ease', textAlign: 'left' }}
+                    onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = '#f9fafb'; }}
+                    onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
                   >
-                    <span>{currentBaseLayer?.label || 'Choose map style'}</span>
-                    <ChevronDown style={{ width: 12, height: 12, opacity: 0.5 }} />
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, border: active ? 'none' : '1.5px solid #d1d5db', backgroundColor: active ? 'var(--green-700)' : 'transparent', transition: 'all 0.1s ease' }} />
+                    {layer.label}
                   </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-[var(--radix-dropdown-menu-trigger-width)] text-[11px] bg-white/95 backdrop-blur-[8px] border border-gray-200 shadow-lg rounded-[10px] p-2 z-[1000]"
+                );
+              })}
+
+              {/* Separator + Show markers toggle */}
+              <div style={{ borderTop: '1px solid #f0f0f0', marginTop: 4, paddingTop: 4 }}>
+                <button
+                  onClick={() => setShowMarkets(v => !v)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-regular)', backgroundColor: 'transparent', color: '#374151', textAlign: 'left' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f9fafb'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
-                  <DropdownMenuLabel className="font-medium text-gray-800">Base map style</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup
-                    value={baseLayerType}
-                    onValueChange={value => setBaseLayerType(value)}
-                  >
-                    {BASE_LAYERS.map(layer => (
-                      <DropdownMenuRadioItem
-                        key={layer.id}
-                        value={layer.id}
-                        className="cursor-pointer text-gray-700 hover:text-gray-900 focus:text-gray-900"
-                      >
-                        {layer.label}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuCheckboxItem
-                    checked={showMarkets}
-                    onCheckedChange={value => setShowMarkets(Boolean(value))}
-                    className="cursor-pointer text-gray-700 hover:text-gray-900 focus:text-gray-900"
-                  >
-                    Show market markers
-                  </DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  <div style={{ width: 12, height: 12, borderRadius: 3, flexShrink: 0, border: showMarkets ? 'none' : '1.5px solid #d1d5db', backgroundColor: showMarkets ? 'var(--green-700)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.1s ease' }}>
+                    {showMarkets && (
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                        <path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  Show markers
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1061,7 +1072,7 @@ function App() {
         <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 400, backgroundColor: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', padding: '10px 14px', boxShadow: '0 2px 8px rgba(0,0,0,.08)', fontSize: 11 }}>
           <div style={{ fontWeight: 700, color: '#374151', marginBottom: 6, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Price Level</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#2D9F6F' }}></div>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#1f8a3e' }}></div>
             <span style={{ color: '#4b5563' }}>Low price (best deal)</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>

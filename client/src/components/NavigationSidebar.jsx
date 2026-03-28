@@ -9,7 +9,7 @@ export default function NavigationSidebar({ activeView = 'map', onNavigate }) {
 
   const mainMenuItems = [
     { label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" />, view: 'dashboard' },
-    { label: 'Carriers', icon: <Users className="h-4 w-4" /> },
+    { label: 'Carriers', icon: <Users className="h-4 w-4" />, view: 'carriers' },
     { label: 'Assets', icon: <Truck className="h-4 w-4" /> },
     { label: 'Commodities', icon: <Factory className="h-4 w-4" />, view: 'map' },
     { label: 'Transactions', icon: <CreditCard className="h-4 w-4" /> },

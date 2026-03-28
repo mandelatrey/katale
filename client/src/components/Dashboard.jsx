@@ -5,6 +5,7 @@ import {
   Activity, Package, MapPin, Clock, ArrowUpRight, ArrowDownRight,
   BarChart2, RefreshCw, ChevronRight
 } from './Icons';
+import CarriersView from './CarriersView';
 import { commodities } from '../constants';
 
 const API_URL = '/api';
@@ -24,7 +25,7 @@ const COMMODITY_COLORS = {
 };
 
 // ─── Summary Card ────────────────────────────────────────────────────────────
-function SummaryCard({ icon, label, value, sub, trend, color = '#2D9F6F', loading }) {
+function SummaryCard({ icon, label, value, sub, trend, color = '#1f8a3e', loading }) {
   const trendUp = trend > 0;
   const trendNeutral = trend === 0 || trend == null;
 
@@ -42,8 +43,8 @@ function SummaryCard({ icon, label, value, sub, trend, color = '#2D9F6F', loadin
         {!trendNeutral && (
           <span style={{
             display: 'flex', alignItems: 'center', gap: 3,
-            fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono)',
-            color: trendUp ? '#2D9F6F' : '#dc2626',
+            fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', fontFamily: 'var(--font-mono)',
+            color: trendUp ? '#1f8a3e' : '#dc2626',
             backgroundColor: trendUp ? '#e6f2ea' : '#fef2f2',
             padding: '2px 7px', borderRadius: 20,
           }}>
@@ -57,13 +58,13 @@ function SummaryCard({ icon, label, value, sub, trend, color = '#2D9F6F', loadin
           <div className="dash-skeleton" style={{ width: '60%', height: 28, borderRadius: 6 }} />
         </div>
       ) : (
-        <div style={{ fontSize: 28, fontWeight: 800, color: '#111827', letterSpacing: '-0.5px', lineHeight: 1, fontFamily: 'var(--font-mono)' }}>
+        <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--weight-black)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)', lineHeight: 'var(--leading-tight)', fontFamily: 'var(--font-mono)' }}>
           {value}
         </div>
       )}
-      <div style={{ marginTop: 6 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{sub}</div>}
+      <div style={{ marginTop: 8 }}>
+        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-700)', lineHeight: 'var(--leading-snug)' }}>{label}</div>
+        {sub && <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-regular)', color: 'var(--gray-500)', marginTop: 2, lineHeight: 'var(--leading-normal)' }}>{sub}</div>}
       </div>
     </div>
   );
@@ -187,14 +188,14 @@ function PriceTrendChart({ selectedCommodities, currency, isMobile = false }) {
   return (
     <div>
       {loading ? (
-        <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 13 }}>
+        <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gray-400)', fontSize: 'var(--text-base)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
             <div className="dash-spinner" />
             Loading 30-day trends…
           </div>
         </div>
       ) : Object.keys(histories).length === 0 ? (
-        <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 13 }}>
+        <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gray-400)', fontSize: 'var(--text-base)' }}>
           No trend data available
         </div>
       ) : (
@@ -238,24 +239,25 @@ function ActivityItem({ icon, title, meta, time, color = '#6b7280', badge, price
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {title}
           </span>
           {badge && (
             <span style={{
-              fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 10,
+              fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', padding: '2px 6px', borderRadius: 10,
               backgroundColor: color + '18', color: color, whiteSpace: 'nowrap', flexShrink: 0,
+              letterSpacing: 'var(--tracking-wide)',
             }}>
               {badge}
             </span>
           )}
         </div>
-        <div style={{ fontSize: 11, color: '#6b7280' }}>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', lineHeight: 'var(--leading-normal)' }}>
           {meta}
           {price && (
             <>
               {' · '}
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 11, color: '#111827' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'var(--weight-medium)', fontSize: 'var(--text-xs)', color: 'var(--gray-900)' }}>
                 {price}
               </span>
               {' / kg'}
@@ -263,7 +265,7 @@ function ActivityItem({ icon, title, meta, time, color = '#6b7280', badge, price
           )}
         </div>
       </div>
-      <div style={{ fontSize: 10, color: '#9ca3af', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 2 }}>
+      <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', whiteSpace: 'nowrap', flexShrink: 0, marginTop: 2 }}>
         {time}
       </div>
     </div>
@@ -280,11 +282,19 @@ function timeAgo(dateStr) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function stableNumber(seed = '') {
+  return String(seed)
+    .split('')
+    .reduce((acc, ch) => ((acc * 31) + ch.charCodeAt(0)) % 1000003, 17);
+}
+
 // ─── Dashboard Main ──────────────────────────────────────────────────────────
-export default function Dashboard({ markets = [], currency = 'UGX', isMobile = false }) {
+export default function Dashboard({ markets = [], currency = 'UGX', isMobile = false, initialSection = 'overview' }) {
   const [latestPrices, setLatestPrices] = useState([]);
   const [loadingPrices, setLoadingPrices] = useState(true);
   const [selectedChart, setSelectedChart] = useState(['maize', 'beans', 'coffee']);
+  const [selectedCarrierId, setSelectedCarrierId] = useState(null);
+  const [activeSection, setActiveSection] = useState(initialSection === 'carriers' ? 'carriers' : 'overview');
 
   // Fetch all latest prices (across all commodities) for stats
   useEffect(() => {
@@ -338,23 +348,118 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
     );
   };
 
+  const carrierRows = useMemo(() => {
+    const grouped = latestPrices.reduce((acc, p) => {
+      const marketId = String(p.market?._id || p.market || p.marketInfo?._id || '');
+      if (!marketId) return acc;
+      if (!acc[marketId]) acc[marketId] = [];
+      acc[marketId].push(p);
+      return acc;
+    }, {});
+
+    return markets.map((m) => {
+      const id = String(m._id);
+      const marketPrices = (grouped[id] || []).sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt));
+      const recent = marketPrices[0];
+      const seeded = stableNumber(id + m.name);
+      const tripId = `UG-${String(seeded).slice(-4)}`;
+      const routeDistanceKm = ((seeded % 86) + 14) / 10;
+      const etaMinutes = (seeded % 130) + 15;
+
+      let status = 'Waiting';
+      if (recent?.recordedAt) {
+        const ageMins = Math.floor((Date.now() - new Date(recent.recordedAt).getTime()) / 60000);
+        if (ageMins <= 240) status = 'On Route';
+        else if (ageMins <= 1440) status = 'Unloading';
+      }
+
+      return {
+        id,
+        name: `${m.district || m.name} Carrier`,
+        market: m.name,
+        district: m.district || 'District N/A',
+        region: m.region || 'Region N/A',
+        status,
+        tripId,
+        routeDistanceKm,
+        etaMinutes,
+        loadCount: marketPrices.length,
+        lastUpdated: recent?.recordedAt || null,
+        updates: marketPrices.slice(0, 4),
+      };
+    }).sort((a, b) => {
+      const statusOrder = { 'On Route': 0, 'Unloading': 1, 'Waiting': 2 };
+      if (statusOrder[a.status] !== statusOrder[b.status]) return statusOrder[a.status] - statusOrder[b.status];
+      return (b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0) - (a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0);
+    });
+  }, [markets, latestPrices]);
+
+  useEffect(() => {
+    if (!carrierRows.length) {
+      setSelectedCarrierId(null);
+      return;
+    }
+    if (!selectedCarrierId || !carrierRows.some(c => c.id === selectedCarrierId)) {
+      setSelectedCarrierId(carrierRows[0].id);
+    }
+  }, [carrierRows, selectedCarrierId]);
+
+  const selectedCarrier = carrierRows.find(c => c.id === selectedCarrierId) || carrierRows[0] || null;
+  const carrierStatusBreakdown = useMemo(() => {
+    return carrierRows.reduce((acc, c) => {
+      acc[c.status] = (acc[c.status] || 0) + 1;
+      return acc;
+    }, { 'On Route': 0, 'Unloading': 0, 'Waiting': 0 });
+  }, [carrierRows]);
+
+  useEffect(() => {
+    setActiveSection(initialSection === 'carriers' ? 'carriers' : 'overview');
+  }, [initialSection]);
+
   return (
     <div className="dashboard">
       {/* ── Header ── */}
       <div className="dash-header">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <h1 className="dash-title" style={{ marginBottom: 2 }}>Dashboard</h1>
+          <h1 className="dash-title" style={{ marginBottom: 2 }}>{activeSection === 'carriers' ? 'Carriers' : 'Dashboard'}</h1>
           <p className="dash-subtitle" style={{ marginTop: 0 }}>
-            Uganda commodity market overview · <span style={{ fontFamily: 'monospace', fontSize: '0.9em', color: '#4ade80' }}>{new Date().toLocaleDateString('en-CA')}</span>
+            Uganda commodity market overview · <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: '#1f8a3e' }}>{new Date().toLocaleDateString('en-CA')}</span>
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {[
+              { key: 'overview', label: 'Overview' },
+              { key: 'carriers', label: 'Carriers' },
+            ].map((tab) => {
+              const active = activeSection === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveSection(tab.key)}
+                  style={{
+                    border: active ? '1px solid rgba(45,159,111,0.28)' : '1px solid #e5e7eb',
+                    backgroundColor: active ? '#e6f2ea' : '#fff',
+                    color: active ? '#065f46' : '#6b7280',
+                    borderRadius: 999,
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 'var(--weight-semibold)',
+                    padding: '5px 12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
           <button 
-            style={{ 
-              fontSize: 11, 
-              color: '#6b7280', 
-              display: 'flex', 
-              alignItems: 'center', 
+            style={{
+              fontSize: 'var(--text-xs)',
+              fontWeight: 'var(--weight-medium)',
+              color: 'var(--gray-500)',
+              display: 'flex',
+              alignItems: 'center',
               gap: 6,
               background: 'transparent',
               border: '1px solid #e5e7eb',
@@ -379,6 +484,7 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
       </div>
 
       {/* ── Summary Cards ── */}
+      {activeSection !== 'carriers' && (
       <div className="dash-cards">
         <SummaryCard
           icon={<Users size={20} />}
@@ -386,7 +492,7 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
           value={loadingPrices ? '—' : stats.activeMarkets.toString()}
           sub="Registered market nodes"
           trend={4}
-          color="#2D9F6F"
+          color="#1f8a3e"
           loading={loadingPrices}
         />
         <SummaryCard
@@ -421,17 +527,19 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
           loading={loadingPrices}
         />
       </div>
+      )}
 
       {/* ── Main Content Row ── */}
+      {activeSection !== 'carriers' && (
       <div className="dash-main">
         {/* Price Trend Chart */}
         <div className="dash-panel" style={{ flex: 2 }}>
           <div className="dash-panel-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <TrendingUp size={16} color="#2D9F6F" />
+              <TrendingUp size={16} color="#1f8a3e" />
               <span className="dash-panel-title">Price Trends — Last 30 Days</span>
             </div>
-            <span style={{ fontSize: 10, color: '#9ca3af', fontWeight: 500 }}>{currency}/kg avg</span>
+            <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)' }}>{currency}/kg avg</span>
           </div>
 
           {/* Commodity toggles */}
@@ -445,7 +553,7 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
                   onClick={() => toggleChartCommodity(c.key)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500,
+                    padding: '3px 10px', borderRadius: 20, fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)',
                     border: active ? `1.5px solid ${col}` : '1.5px solid #e5e7eb',
                     backgroundColor: active ? col + '18' : '#fff',
                     color: active ? col : '#6b7280',
@@ -467,10 +575,10 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
         <div className="dash-panel" style={{ flex: 1, minWidth: 280 }}>
           <div className="dash-panel-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Activity size={16} color="#2D9F6F" />
+              <Activity size={16} color="#1f8a3e" />
               <span className="dash-panel-title">Recent Activity</span>
             </div>
-            <span style={{ fontSize: 10, backgroundColor: '#fef9c3', color: '#92400e', padding: '2px 7px', borderRadius: 10, fontWeight: 700 }}>
+            <span style={{ fontSize: 'var(--text-2xs)', backgroundColor: '#fef9c3', color: '#92400e', padding: '2px 7px', borderRadius: 10, fontWeight: 'var(--weight-bold)', letterSpacing: 'var(--tracking-wide)' }}>
               LIVE
             </span>
           </div>
@@ -515,18 +623,19 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
 
           {recentActivity.length > 0 && (
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f3f4f6', textAlign: 'center' }}>
-              <span style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'var(--font-mono)' }}>Showing {recentActivity.length} most recent entries</span>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontFamily: 'var(--font-mono)' }}>Showing {recentActivity.length} most recent entries</span>
             </div>
           )}
         </div>
       </div>
+      )}
 
       {/* ── Market Coverage Row — desktop only ── */}
-      {!isMobile && (
+      {!isMobile && activeSection !== 'carriers' && (
       <div className="dash-panel" style={{ marginTop: 0 }}>
         <div className="dash-panel-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <MapPin size={16} color="#2D9F6F" />
+            <MapPin size={16} color="#1f8a3e" />
             <span className="dash-panel-title">Market Coverage by Region</span>
           </div>
         </div>
@@ -537,19 +646,186 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
             return (
               <div key={region} style={{ flex: 1, minWidth: 120 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{region}</span>
-                  <span style={{ fontSize: 11, color: '#6b7280', fontFamily: 'var(--font-mono)' }}>{count} markets</span>
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-700)' }}>{region}</span>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', fontFamily: 'var(--font-mono)' }}>{count} markets</span>
                 </div>
                 <div style={{ width: '100%', height: 6, backgroundColor: '#f3f4f6', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', backgroundColor: '#2D9F6F', borderRadius: 3, transition: 'width 0.8s ease' }} />
+                  <div style={{ width: `${pct}%`, height: '100%', backgroundColor: '#1f8a3e', borderRadius: 3, transition: 'width 0.8s ease' }} />
                 </div>
-                <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 3, fontFamily: 'var(--font-mono)' }}>{pct}% of total</div>
+                <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', marginTop: 3, fontFamily: 'var(--font-mono)' }}>{pct}% of total</div>
               </div>
             );
           })}
         </div>
       </div>
       )}
+
+      {/* ── Carrier Operations Section ── */}
+      {activeSection === 'carriers' && (
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <CarriersView />
+        </div>
+      )}
+      <div className="dash-panel" style={{ marginTop: 0, display: activeSection === 'carriers' ? 'none' : 'block' }}>
+        <div className="dash-panel-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Truck size={16} color="#1f8a3e" />
+            <span className="dash-panel-title">Carrier Operations</span>
+          </div>
+          <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontFamily: 'var(--font-mono)', letterSpacing: 'var(--tracking-wide)' }}>
+            {carrierRows.length} active lanes
+          </span>
+        </div>
+
+        {loadingPrices ? (
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.1fr 2fr', gap: 12 }}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="dash-skeleton" style={{ height: 62, borderRadius: 10 }} />
+            ))}
+          </div>
+        ) : carrierRows.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '28px 0', color: '#9ca3af', fontSize: 12 }}>
+            No carrier coverage available yet
+          </div>
+        ) : (
+          <div className="carrier-ops-layout">
+            <div className="carrier-ops-list">
+              {carrierRows.slice(0, isMobile ? 6 : 9).map((carrier) => {
+                const selected = carrier.id === selectedCarrier?.id;
+                const tone = carrier.status === 'On Route' ? '#1f8a3e' : carrier.status === 'Unloading' ? '#d97706' : '#6b7280';
+                return (
+                  <button
+                    key={carrier.id}
+                    onClick={() => setSelectedCarrierId(carrier.id)}
+                    className="carrier-ops-item"
+                    style={{
+                      borderColor: selected ? 'rgba(45,159,111,0.35)' : '#eef0f2',
+                      backgroundColor: selected ? '#e6f2ea' : '#fff',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: tone + '1f', color: tone, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                        <Truck size={14} />
+                      </div>
+                      <div style={{ minWidth: 0, textAlign: 'left' }}>
+                        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{carrier.name}</div>
+                        <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-500)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{carrier.market} · {carrier.region}</div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: tone, backgroundColor: tone + '1f', padding: '2px 6px', borderRadius: 10, letterSpacing: 'var(--tracking-wide)' }}>
+                      {carrier.status}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedCarrier && (
+              <div className="carrier-ops-detail">
+                <div className="carrier-ops-hero">
+                  <div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontFamily: 'var(--font-mono)', marginBottom: 2 }}>{selectedCarrier.tripId}</div>
+                    <div style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)', lineHeight: 'var(--leading-snug)' }}>{selectedCarrier.name}</div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-500)', marginTop: 3 }}>
+                      {selectedCarrier.market} · {selectedCarrier.district}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <span style={{ fontSize: 'var(--text-2xs)', backgroundColor: '#e6f2ea', color: '#065f46', padding: '3px 8px', borderRadius: 8, fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-wide)' }}>
+                      {selectedCarrier.status}
+                    </span>
+                    <span style={{ fontSize: 'var(--text-2xs)', backgroundColor: 'var(--gray-100)', color: 'var(--gray-600)', padding: '3px 8px', borderRadius: 8, fontWeight: 'var(--weight-medium)' }}>
+                      {selectedCarrier.loadCount} updates
+                    </span>
+                  </div>
+                </div>
+
+                <div className="carrier-ops-metrics">
+                  <div className="carrier-ops-metric-card">
+                    <MapPin size={14} color="#1f8a3e" />
+                    <div>
+                      <div className="carrier-ops-metric-label">Route distance</div>
+                      <div className="carrier-ops-metric-value">{selectedCarrier.routeDistanceKm.toFixed(1)} km</div>
+                    </div>
+                  </div>
+                  <div className="carrier-ops-metric-card">
+                    <Clock size={14} color="#d97706" />
+                    <div>
+                      <div className="carrier-ops-metric-label">Estimated time</div>
+                      <div className="carrier-ops-metric-value">{selectedCarrier.etaMinutes} min</div>
+                    </div>
+                  </div>
+                  <div className="carrier-ops-metric-card">
+                    <Activity size={14} color="#6366f1" />
+                    <div>
+                      <div className="carrier-ops-metric-label">Last market ping</div>
+                      <div className="carrier-ops-metric-value">{selectedCarrier.lastUpdated ? timeAgo(selectedCarrier.lastUpdated) : 'No update'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="carrier-ops-bottom">
+                  <div style={{ border: '1px solid #f1f3f5', borderRadius: 10, padding: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <span style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>Latest Lane Activity</span>
+                      <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontFamily: 'var(--font-mono)' }}>
+                        {selectedCarrier.updates.length} entries
+                      </span>
+                    </div>
+                    {selectedCarrier.updates.length === 0 ? (
+                      <div style={{ fontSize: 11, color: '#9ca3af', padding: '12px 0' }}>No linked price updates for this lane.</div>
+                    ) : (
+                      selectedCarrier.updates.map((update, i) => {
+                        const commodity = commodities.find(c => c.key === update.commodity);
+                        const displayPrice = currency === 'USD'
+                          ? `$${(update.price / 3700).toFixed(2)}`
+                          : `UGX ${Math.round(update.price).toLocaleString()}`;
+                        return (
+                          <div key={update._id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: i === 0 ? 'none' : '1px solid #f8fafc' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                              <span style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: '#f3f4f6', display: 'grid', placeItems: 'center', color: '#6b7280', flexShrink: 0 }}>
+                                {commodity?.icon || <Package size={12} />}
+                              </span>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-800)', textTransform: 'capitalize' }}>{(update.commodity || '').replace(/_/g, ' ')}</div>
+                                <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)' }}>{timeAgo(update.recordedAt)}</div>
+                              </div>
+                            </div>
+                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', fontWeight: 'var(--weight-medium)' }}>{displayPrice}</div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div style={{ border: '1px solid #f1f3f5', borderRadius: 10, padding: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <span style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>Fleet Snapshot</span>
+                      <ChevronRight size={13} color="#9ca3af" />
+                    </div>
+                    {['On Route', 'Unloading', 'Waiting'].map((key) => {
+                      const count = carrierStatusBreakdown[key] || 0;
+                      const pct = carrierRows.length ? Math.round((count / carrierRows.length) * 100) : 0;
+                      const col = key === 'On Route' ? '#1f8a3e' : key === 'Unloading' ? '#d97706' : '#9ca3af';
+                      return (
+                        <div key={key} style={{ marginBottom: 10 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-600)', fontWeight: 'var(--weight-medium)' }}>{key}</span>
+                            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontFamily: 'var(--font-mono)' }}>{count}</span>
+                          </div>
+                          <div style={{ width: '100%', height: 6, borderRadius: 3, backgroundColor: '#f3f4f6', overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', backgroundColor: col, borderRadius: 3, transition: 'width .3s ease' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

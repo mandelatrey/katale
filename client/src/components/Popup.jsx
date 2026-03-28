@@ -26,7 +26,7 @@ export default function Popup({ map, market, prices, onClose, allMarkets, isMobi
       return;
     }
     setLoadingPrices(true);
-    fetch(`/api/prices/market/${market._id}?days=30`)
+    fetch(`/api/prices/market/${market._id}?limit=30`)
       .then(r => r.json())
       .then(data => {
         priceCache.current[market._id] = data;
@@ -79,7 +79,7 @@ export default function Popup({ map, market, prices, onClose, allMarkets, isMobi
     meta: { display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '6px 12px', marginBottom: 14, fontSize: 11, flexShrink: 0 },
     metaLabel: { color: '#9ca3af' },
     metaValue: { color: '#111827', fontWeight: 500, textTransform: 'capitalize' },
-    tabRow: { display: 'flex', gap: 4, marginBottom: 14, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', flexShrink: 0 },
+    tabRow: { display: 'flex', gap: 4, marginBottom: 0, paddingBottom: 12, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', flexShrink: 0, borderBottom: '1px solid #f0f0f0' },
     tab: (active) => ({ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 'var(--radius-sm)', border: 'none', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', backgroundColor: active ? '#111827' : '#f3f4f6', color: active ? '#fff' : '#6b7280', transition: 'all 0.15s ease', whiteSpace: 'nowrap' }),
     commodityCard: { padding: '10px 12px', backgroundColor: '#fafafa', borderRadius: 'var(--radius-md)', border: '1px solid #f0f0f0', marginBottom: 8 },
     commodityName: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#111827', marginBottom: 6 },
@@ -132,7 +132,7 @@ export default function Popup({ map, market, prices, onClose, allMarkets, isMobi
         ))}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: 4, scrollbarWidth: 'thin' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: 4, paddingTop: 12, scrollbarWidth: 'thin' }}>
         {/* Prices tab */}
         {activeTab === 'prices' && (
           <div>
@@ -195,7 +195,7 @@ export default function Popup({ map, market, prices, onClose, allMarkets, isMobi
                 <h4 style={{ fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Specialties</h4>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {market.specialties.map(sp => (
-                    <span key={sp} style={{ padding: '3px 8px', fontSize: 10, fontWeight: 500, borderRadius: 'var(--radius-sm)', backgroundColor: '#E8F5EE', color: '#2D9F6F' }}>{sp}</span>
+                    <span key={sp} style={{ padding: '3px 8px', fontSize: 10, fontWeight: 500, borderRadius: 'var(--radius-sm)', backgroundColor: '#e6f2ea', color: '#1a6b30' }}>{sp}</span>
                   ))}
                 </div>
               </div>
