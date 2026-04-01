@@ -50,4 +50,6 @@ export const ArrowDownRight = (p) => <IonIcon name="arrow-down-outline" {...p} /
 export const RefreshCw = (p) => <IonIcon name="refresh-outline" {...p} />;
 export const ChevronRight = (p) => <IonIcon name="chevron-forward-outline" {...p} />;
 export const Phone = (p) => <IonIcon name="call-outline" {...p} />;
+export const Pencil = (p) => <IonIcon name="pencil-outline" {...p} />;
+export const Trash2 = (p) => <IonIcon name="trash-outline" {...p} />;
 

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { ROUTES } from './routes';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
@@ -14,6 +16,12 @@ import Popup from './components/Popup';
 import MarketList from './components/MarketList';
 import NavigationSidebar from './components/NavigationSidebar';
 import Dashboard from './components/Dashboard';
+import AssetsView from './components/AssetsView';
+import TransactionsView from './components/TransactionsView';
+import PaymentsView from './components/PaymentsView';
+import ReportsView from './components/ReportsView';
+import StatementsView from './components/StatementsView';
+import CarriersView from './components/CarriersView';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -143,7 +151,8 @@ function App() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState('');
   const [desktopSearch, setDesktopSearch] = useState('');
-  const [activeView, setActiveView] = useState('map'); // 'map' | 'dashboard'
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('commodities'); // bottom tab active item
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const unreadMessages = 2; // badge count — replace with real data when available
@@ -367,25 +376,32 @@ function App() {
     <div className="app">
       {!isMobile && (
         <NavigationSidebar
-          activeView={activeView}
-          onNavigate={setActiveView}
+          onNavigate={navigate}
         />
       )}
 
 
-      {/* ── Dashboard View — always mounted, hidden via CSS ── */}
-      {!isMobile && (
-        <div style={{ display: (activeView === 'dashboard' || activeView === 'carriers') ? 'contents' : 'none' }}>
-          <Dashboard 
-            markets={markets} 
-            currency={currency} 
-            initialSection={activeView === 'carriers' ? 'carriers' : 'overview'} 
-          />
+      {/* ── Right-side content area (overlay views + map view) ── */}
+      <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'row' }}>
+
+      {/* ── Overlay Views — rendered via React Router ── */}
+      {!isMobile && location.pathname !== ROUTES.MAP && (
+        <div style={{ flex: 1, flexDirection: 'column', minHeight: 0, overflow: 'hidden', display: 'flex' }}>
+          <Routes>
+            <Route path={ROUTES.DASHBOARD} element={<Dashboard markets={markets} currency={currency} />} />
+            <Route path={ROUTES.CARRIERS} element={<CarriersView />} />
+            <Route path={ROUTES.ASSETS} element={<AssetsView currency={currency} />} />
+            <Route path={ROUTES.TRANSACTIONS} element={<TransactionsView currency={currency} />} />
+            <Route path={ROUTES.PAYMENTS} element={<PaymentsView currency={currency} />} />
+            <Route path={ROUTES.REPORTS} element={<ReportsView currency={currency} />} />
+            <Route path={ROUTES.STATEMENTS} element={<StatementsView currency={currency} />} />
+            <Route path="*" element={<Navigate to={ROUTES.MAP} replace />} />
+          </Routes>
         </div>
       )}
 
       {/* ── Map View — always mounted, hidden via CSS so #map is never destroyed ── */}
-      <div style={{ display: (!isMobile && (activeView === 'dashboard' || activeView === 'carriers')) ? 'none' : 'contents' }}>
+      <div style={{ display: (!isMobile && location.pathname !== ROUTES.MAP) ? 'none' : 'contents' }}>
       <div className="sidebar">
         {/* ── Sidebar Header (fixed top) ── */}
         <div style={{ flexShrink: 0, backgroundColor: '#fff', padding: '20px 20px 12px', borderBottom: '1px solid #f3f4f6' }}>
@@ -400,7 +416,7 @@ function App() {
           </div>
 
           {/* Region selector dropdown - only show in map view */}
-          {activeView === 'map' && (
+          {location.pathname === ROUTES.MAP && (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <div
@@ -473,7 +489,7 @@ function App() {
           </div>
 
           {/* Commodity pills - only show in map view */}
-          {activeView === 'map' && (
+          {location.pathname === ROUTES.MAP && (
             <div style={{ marginBottom: 20 }}>
               <h3 style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Select Commodity</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -580,19 +596,32 @@ function App() {
             )}
             {activeTab === 'carriers' && (
               <div className="mobile-view-panel">
-                <Dashboard markets={markets} currency={currency} isMobile={true} initialSection="carriers" />
+                <CarriersView />
               </div>
             )}
             {activeTab === 'transactions' && (
               <div className="mobile-view-panel">
-                <div className="mobile-placeholder">
-                  <div className="mobile-placeholder-icon">
-                    <Receipt size={28} color="#1a6b30" />
-                  </div>
-                  <div className="mobile-placeholder-title">Transactions</div>
-                  <div className="mobile-placeholder-sub">Your trade records, shipment logs, and payment history will appear here.</div>
-                  <span className="mobile-placeholder-badge">🚧 Coming Soon</span>
-                </div>
+                <TransactionsView currency={currency} isMobile={true} />
+              </div>
+            )}
+            {activeTab === 'assets' && (
+              <div className="mobile-view-panel">
+                <AssetsView currency={currency} isMobile={true} />
+              </div>
+            )}
+            {activeTab === 'payments' && (
+              <div className="mobile-view-panel">
+                <PaymentsView currency={currency} isMobile={true} />
+              </div>
+            )}
+            {activeTab === 'reports' && (
+              <div className="mobile-view-panel">
+                <ReportsView currency={currency} isMobile={true} />
+              </div>
+            )}
+            {activeTab === 'statements' && (
+              <div className="mobile-view-panel">
+                <StatementsView currency={currency} isMobile={true} />
               </div>
             )}
             {activeTab === 'chat' && (
@@ -914,7 +943,6 @@ function App() {
               </div>
               <div className="mobile-more-grid">
                 {[
-                  { label: 'Carriers',        icon: Truck      },
                   { label: 'Assets',          icon: Package    },
                   { label: 'Payments',        icon: CreditCard },
                   { label: 'Reports',         icon: BarChart2  },
@@ -1098,6 +1126,7 @@ function App() {
           <a href="https://ugandacoffee.go.ug" target="_blank" rel="noopener">UCDA</a>,{' '}
           <a href="https://ubos.org" target="_blank" rel="noopener">UBOS</a>
         </div>
+      </div>
       </div>
       </div>
     </div>

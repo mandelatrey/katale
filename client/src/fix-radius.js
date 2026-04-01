@@ -20,4 +20,4 @@ files.forEach(file => {
   fs.writeFileSync(file, content, 'utf8');
 });
 
-console.log("Radius fixed.");
+

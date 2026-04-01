@@ -1,21 +1,36 @@
-import { LayoutDashboard, Users, Truck, Factory, CreditCard, Receipt, FileText, Settings, Bell, MessageSquare, LogOut } from './Icons';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { ROUTES } from '../routes';
+import { LayoutDashboard, Users, Factory, CreditCard, Receipt, Truck, FileText, Settings, Bell, MessageSquare, LogOut, ChevronDown, ChevronUp } from './Icons';
 
-export default function NavigationSidebar({ activeView = 'map', onNavigate }) {
-  // Map nav labels to view keys
-  const VIEW_MAP = {
-    'Dashboard': 'dashboard',
-    'Commodities': 'map',
-  };
+const API_URL = '/api';
+
+export default function NavigationSidebar({ onNavigate }) {
+  const location = useLocation();
+  const [pendingPayments, setPendingPayments] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_URL}/payments?status=pending&limit=100`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setPendingPayments(data.length);
+      })
+      .catch(() => {});
+  }, []);
 
   const mainMenuItems = [
-    { label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" />, view: 'dashboard' },
-    { label: 'Carriers', icon: <Users className="h-4 w-4" />, view: 'carriers' },
-    { label: 'Assets', icon: <Truck className="h-4 w-4" /> },
-    { label: 'Commodities', icon: <Factory className="h-4 w-4" />, view: 'map' },
-    { label: 'Transactions', icon: <CreditCard className="h-4 w-4" /> },
-    { label: 'Payments', icon: <Receipt className="h-4 w-4" /> },
-    { label: 'Reports', icon: <FileText className="h-4 w-4" /> },
-    { label: 'Statements', icon: <FileText className="h-4 w-4" /> },
+    { label: 'Commodities', icon: <Factory className="h-4 w-4" />, route: ROUTES.MAP },
+    { label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" />, route: ROUTES.DASHBOARD },
+    { label: 'Carriers', icon: <Users className="h-4 w-4" />, route: ROUTES.CARRIERS },
+    { label: 'Transactions', icon: <CreditCard className="h-4 w-4" />, route: ROUTES.TRANSACTIONS },
+    { label: 'Payments', icon: <Receipt className="h-4 w-4" />, route: ROUTES.PAYMENTS },
+  ];
+
+  const moreMenuItems = [
+    { label: 'Assets', icon: <Truck className="h-4 w-4" />, route: ROUTES.ASSETS },
+    { label: 'Reports', icon: <FileText className="h-4 w-4" />, route: ROUTES.REPORTS },
+    { label: 'Statements', icon: <FileText className="h-4 w-4" />, route: ROUTES.STATEMENTS },
   ];
 
   const bottomMenuItems = [
@@ -23,12 +38,39 @@ export default function NavigationSidebar({ activeView = 'map', onNavigate }) {
     { label: 'Company settings', icon: <Settings className="h-4 w-4" /> },
   ];
 
-  const getActiveLabel = () => {
-    const found = mainMenuItems.find(i => i.view === activeView);
-    return found?.label ?? 'Commodities';
-  };
+  // Auto-expand "More" if current route is one of the more items
+  const isMoreRoute = moreMenuItems.some(item => item.route === location.pathname);
 
-  const activeLabel = getActiveLabel();
+  const renderNavItem = (item) => (
+    <div
+      key={item.label}
+      className={`nav-item ${location.pathname === item.route ? 'active' : ''}`}
+      onClick={() => onNavigate(item.route)}
+      style={{ cursor: 'pointer' }}
+    >
+      <div className="nav-item-icon">{item.icon}</div>
+      <span>{item.label}</span>
+      {item.route === ROUTES.PAYMENTS && pendingPayments > 0 && (
+        <span style={{
+          background: '#dc2626',
+          color: '#fff',
+          fontSize: 10,
+          minWidth: 16,
+          height: 16,
+          borderRadius: 8,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginLeft: 4,
+          padding: '0 4px',
+          fontWeight: 600,
+          lineHeight: 1,
+        }}>
+          {pendingPayments <= 99 ? pendingPayments : '99+'}
+        </span>
+      )}
+    </div>
+  );
 
   return (
     <div className="global-nav">
@@ -42,17 +84,20 @@ export default function NavigationSidebar({ activeView = 'map', onNavigate }) {
 
       <div className="global-nav-section">
         <div className="global-nav-menu">
-          {mainMenuItems.map((item) => (
-            <div
-              key={item.label}
-              className={`nav-item ${activeLabel === item.label ? 'active' : ''}`}
-              onClick={() => item.view && onNavigate ? onNavigate(item.view) : undefined}
-              style={{ cursor: item.view ? 'pointer' : 'default', opacity: item.view ? 1 : 0.5 }}
-            >
-              <div className="nav-item-icon">{item.icon}</div>
-              <span>{item.label}</span>
+          {mainMenuItems.map(renderNavItem)}
+
+          {/* More section */}
+          <div
+            className="nav-item"
+            onClick={() => setMoreOpen(o => !o)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="nav-item-icon">
+              {(moreOpen || isMoreRoute) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </div>
-          ))}
+            <span>More</span>
+          </div>
+          {(moreOpen || isMoreRoute) && moreMenuItems.map(renderNavItem)}
         </div>
       </div>
 

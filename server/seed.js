@@ -414,7 +414,6 @@ async function seed() {
   await Price.deleteMany({});
 
   const createdMarkets = await Market.insertMany(markets);
-  console.log(`✓ Seeded ${createdMarkets.length} markets`);
 
   const prices = [];
   const DAYS = 90;
@@ -454,15 +453,6 @@ async function seed() {
     await Price.insertMany(prices.slice(i, i + BATCH_SIZE));
   }
 
-  console.log(
-    `✓ Seeded ${prices.length} price records (${DAYS} days × ${createdMarkets.length} markets × ${commodityNames.length} commodities)`,
-  );
-  console.log(`\nData sources:`);
-  console.log(`  • Farmgain Africa (farmgainafrica.org)`);
-  console.log(`  • AgroMarketDay (agromarketday.com)`);
-  console.log(`  • Uganda Coffee Development Authority (ugandacoffee.go.ug)`);
-  console.log(`  • SelinaWamucii (selinawamucii.com)`);
-  console.log(`  • Uganda Bureau of Statistics (ubos.org)`);
 
   process.exit(0);
 }

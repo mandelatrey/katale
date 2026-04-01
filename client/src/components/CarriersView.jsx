@@ -1,20 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Chart from 'chart.js/auto';
-import { MapPin, Clock, MessageCircle, Phone, MoreHorizontal, ChevronDown, ChevronRight, Truck, Package, Activity, ArrowUpRight } from './Icons';
-
-const MOCK_DRIVERS = [
-  { id: 1,  name: 'Okello James',        phone: '+256 772 481 203', role: 'driver', status: 'ON THE WAY', category: 'Favorites', vehicleModel: 'Volkswagen Transporter', vehicleType: 'Van',   image: '/images/vehicles/volkswagen_van.png',    specs: { payload: '2,885 lbs', volume: '353,937 in³', length: '117 in', width: '67 in', plate: 'UAU 823F' } },
-  { id: 2,  name: 'Mugisha Samuel',       phone: '+256 701 334 556', role: 'driver', status: 'ON THE WAY', category: 'Favorites', vehicleModel: 'Mercedes-Benz Sprinter', vehicleType: 'Van',   image: '/images/vehicles/mercedes_sprinter.png', specs: { payload: '3,814 lbs', volume: '319,000 in³', length: '144 in', width: '70 in', plate: 'UBD 014K' } },
-  { id: 3,  name: 'Akello Grace',         phone: '+256 755 920 178', role: 'driver', status: 'LOADING',    category: 'Favorites', vehicleModel: 'Isuzu NQR',             vehicleType: 'Van',   image: '/images/vehicles/volkswagen_van.png',    specs: { payload: '2,885 lbs', volume: '353,937 in³', length: '117 in', width: '67 in', plate: 'UBG 447H' } },
-  { id: 4,  name: 'Ochieng Patrick',      phone: '+256 782 645 091', role: 'driver', status: 'WAITING',    category: 'Favorites', vehicleModel: 'Toyota Dyna',           vehicleType: 'Van',   image: '/images/vehicles/mercedes_sprinter.png', specs: { payload: '2,500 lbs', volume: '250,000 in³', length: '111 in', width: '65 in', plate: 'UBH 339J' } },
-  { id: 5,  name: 'Ssali Robert',         phone: '+256 703 117 462', role: 'driver', status: 'ON THE WAY', category: 'Trucks',    vehicleModel: 'Volvo FL',              vehicleType: 'Truck', image: '/images/vehicles/volvo_truck.png',       specs: { payload: '14,000 lbs', volume: '1,200,000 in³', length: '240 in', width: '96 in', plate: 'UCA 551M' } },
-  { id: 6,  name: 'Byamukama David',      phone: '+256 776 803 374', role: 'driver', status: 'WAITING',    category: 'Trucks',    vehicleModel: 'Mercedes-Benz Actros',  vehicleType: 'Truck', image: '/images/vehicles/volvo_truck.png',       specs: { payload: '16,000 lbs', volume: '1,400,000 in³', length: '260 in', width: '96 in', plate: 'UCB 706N' } },
-  { id: 7,  name: 'Tumusiime Moses',      phone: '+256 752 290 815', role: 'driver', status: 'ON THE WAY', category: 'Trucks',    vehicleModel: 'Volvo FL',              vehicleType: 'Truck', image: '/images/vehicles/volvo_truck.png',       specs: { payload: '14,000 lbs', volume: '1,200,000 in³', length: '240 in', width: '96 in', plate: 'UCC 182P' } },
-  { id: 8,  name: 'Wasswa Joseph',        phone: '+256 714 563 047', role: 'driver', status: 'UNLOADING',  category: 'Trucks',    vehicleModel: 'Volvo FH',              vehicleType: 'Truck', image: '/images/vehicles/volvo_truck.png',       specs: { payload: '44,000 lbs', volume: '2,500,000 in³', length: '500 in', width: '102 in', plate: 'UCD 073Q' } },
-  { id: 9,  name: 'Nakato Sarah',         phone: '+256 783 451 629', role: 'driver', status: 'LOADING',    category: 'Vans',      vehicleModel: 'Mitsubishi Canter',     vehicleType: 'Van',   image: '/images/vehicles/volkswagen_van.png',    specs: { payload: '2,885 lbs', volume: '353,937 in³', length: '117 in', width: '67 in', plate: 'UCF 920R' } },
-  { id: 10, name: 'Kizza Emmanuel',       phone: '+256 701 738 254', role: 'driver', status: 'ON THE WAY', category: 'Vans',      vehicleModel: 'Isuzu ELF',             vehicleType: 'Van',   image: '/images/vehicles/mercedes_sprinter.png', specs: { payload: '3,814 lbs', volume: '319,000 in³', length: '144 in', width: '70 in', plate: 'UCG 261S' } },
-  { id: 11, name: 'Amony Florence',       phone: '+256 775 094 483', role: 'driver', status: 'ON THE WAY', category: 'Vans',      vehicleModel: 'Toyota Dyna',           vehicleType: 'Van',   image: '/images/vehicles/mercedes_sprinter.png', specs: { payload: '2,500 lbs', volume: '250,000 in³', length: '111 in', width: '65 in', plate: 'UCH 514T' } },
-];
+import OLMap from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import XYZ from 'ol/source/XYZ';
+import OSM from 'ol/source/OSM';
+import Feature from 'ol/Feature';
+import Point from 'ol/geom/Point';
+import LineString from 'ol/geom/LineString';
+import { fromLonLat } from 'ol/proj';
+import { Style, Fill, Stroke, Circle as CircleStyle } from 'ol/style';
+import { MapPin, Clock, MessageCircle, Phone, MoreHorizontal, ChevronDown, Truck, Package, Activity, ArrowUpRight, X, Check, Pencil, Trash2 } from './Icons';
 
 const STATUS_COLORS = {
   'ON THE WAY': { text: '#1f8a3e', bg: '#e6f2ea' },
@@ -45,7 +43,7 @@ function DriverListItem({ driver, isActive, onClick }) {
       }}
     >
       <img
-        src={`https://i.pravatar.cc/150?u=${driver.id}`}
+        src={`https://i.pravatar.cc/150?u=${driver._id}`}
         alt={driver.name}
         style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
       />
@@ -134,323 +132,671 @@ function DriverStatsChart() {
   );
 }
 
-// Active routes derived from real market data
-const UGANDAN_ROUTES = [
-  { from: 'Kampala Central Market', to: 'Gulu Main Market',      distKm: 338, packages: 124 },
-  { from: 'Owino Market, Kampala',  to: 'Mbale Produce Market',  distKm: 217, packages: 86  },
-  { from: 'Nakasero Market',        to: 'Mbarara Central Market', distKm: 272, packages: 107 },
-  { from: 'St. Balikuddembe Market',to: 'Lira Market',            distKm: 342, packages: 93  },
-  { from: 'Kalerwe Market',         to: 'Masaka Main Market',     distKm: 138, packages: 71  },
-  { from: 'Wandegeya Market',       to: 'Jinja Main Market',      distKm: 81,  packages: 58  },
-  { from: 'Bugolobi Market',        to: 'Fort Portal Market',     distKm: 301, packages: 115 },
-  { from: 'Nakawa Market',          to: 'Kabale Market',          distKm: 413, packages: 99  },
-  { from: 'Kikuubo Market',         to: 'Arua Market',            distKm: 479, packages: 132 },
-  { from: 'Ntinda Market',          to: 'Soroti Market',          distKm: 315, packages: 88  },
-  { from: 'Nateete Market',         to: 'Tororo Market',          distKm: 193, packages: 76  },
-];
+// Mini OpenLayers map showing a route line between two coordinates
+function RouteMap({ activeRoute }) {
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const MAP_TILER_KEY = import.meta.env.VITE_MAP_TILER_API_KEY;
 
-function driverRoute(driverId) {
-  return UGANDAN_ROUTES[(driverId - 1) % UGANDAN_ROUTES.length];
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const from = activeRoute?.fromCoords;
+    const to = activeRoute?.toCoords;
+
+    // Destroy previous instance
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setTarget(undefined);
+      mapInstanceRef.current = null;
+    }
+
+    if (!from || !to || from.length < 2 || to.length < 2) return;
+
+    const fromPt = fromLonLat(from);
+    const toPt   = fromLonLat(to);
+
+    const lineFeature = new Feature({ geometry: new LineString([fromPt, toPt]) });
+    lineFeature.setStyle(new Style({
+      stroke: new Stroke({ color: '#1f8a3e', width: 2.5, lineDash: [6, 4] }),
+    }));
+
+    const fromFeature = new Feature({ geometry: new Point(fromPt) });
+    fromFeature.setStyle(new Style({
+      image: new CircleStyle({ radius: 6, fill: new Fill({ color: '#111827' }), stroke: new Stroke({ color: '#fff', width: 2 }) }),
+    }));
+
+    const toFeature = new Feature({ geometry: new Point(toPt) });
+    toFeature.setStyle(new Style({
+      image: new CircleStyle({ radius: 6, fill: new Fill({ color: '#1f8a3e' }), stroke: new Stroke({ color: '#fff', width: 2 }) }),
+    }));
+
+    const vectorSource = new VectorSource({ features: [lineFeature, fromFeature, toFeature] });
+
+    const baseLayer = MAP_TILER_KEY
+      ? new TileLayer({ source: new XYZ({ url: `https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${MAP_TILER_KEY}`, crossOrigin: 'anonymous' }) })
+      : new TileLayer({ source: new OSM() });
+
+    const map = new OLMap({
+      target: mapRef.current,
+      layers: [baseLayer, new VectorLayer({ source: vectorSource })],
+      view: new View({ center: fromPt, zoom: 7 }),
+      controls: [],
+    });
+
+    // Fit view to route extent with padding
+    map.getView().fit(vectorSource.getExtent(), {
+      padding: [24, 24, 24, 24],
+      maxZoom: 12,
+      duration: 0,
+    });
+
+    mapInstanceRef.current = map;
+
+    return () => {
+      map.setTarget(undefined);
+    };
+  }, [activeRoute?.fromCoords?.join(), activeRoute?.toCoords?.join()]);
+
+  if (!activeRoute?.fromCoords || !activeRoute?.toCoords) {
+    return (
+      <div style={{ backgroundColor: '#f3f4f6', borderRadius: 12, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 'var(--text-xs)', color: '#9ca3af' }}>No route data</span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={mapRef}
+      style={{ borderRadius: 12, height: 120, overflow: 'hidden', pointerEvents: 'none' }}
+    />
+  );
 }
 
-function driverHistoryRoutes(driverId) {
-  return [
-    UGANDAN_ROUTES[driverId % UGANDAN_ROUTES.length],
-    UGANDAN_ROUTES[(driverId + 3) % UGANDAN_ROUTES.length],
-  ];
+function AddDriverModal({ onClose, onSave }) {
+  const [form, setForm] = useState({
+    name: '', phone: '', vehicleModel: '', vehicleType: 'Van',
+    category: 'Vans', status: 'WAITING',
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  function set(field, value) {
+    setForm(f => ({ ...f, [field]: value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.name.trim()) { setError('Name is required'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await onSave(form);
+    } catch (err) {
+      setError(err.message || 'Failed to save');
+      setSaving(false);
+    }
+  }
+
+  const inputStyle = {
+    width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: 8,
+    fontSize: 'var(--text-base)', color: 'var(--gray-900)', backgroundColor: '#f9fafb',
+    outline: 'none', boxSizing: 'border-box',
+  };
+  const labelStyle = { fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--gray-500)', marginBottom: 4, display: 'block' };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+      <div style={{ backgroundColor: '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>Add New Driver</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 4 }}>
+            <X style={{ width: 18, height: 18 }} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelStyle}>Full Name *</label>
+              <input style={inputStyle} value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Okello James" />
+            </div>
+            <div>
+              <label style={labelStyle}>Phone</label>
+              <input style={inputStyle} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+256 7XX XXX XXX" />
+            </div>
+            <div>
+              <label style={labelStyle}>Vehicle Model</label>
+              <input style={inputStyle} value={form.vehicleModel} onChange={e => set('vehicleModel', e.target.value)} placeholder="e.g. Toyota Dyna" />
+            </div>
+            <div>
+              <label style={labelStyle}>Vehicle Type</label>
+              <select style={inputStyle} value={form.vehicleType} onChange={e => set('vehicleType', e.target.value)}>
+                <option value="Van">Van</option>
+                <option value="Truck">Truck</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Category</label>
+              <select style={inputStyle} value={form.category} onChange={e => set('category', e.target.value)}>
+                <option value="Favorites">Favorites</option>
+                <option value="Trucks">Trucks</option>
+                <option value="Vans">Vans</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Status</label>
+              <select style={inputStyle} value={form.status} onChange={e => set('status', e.target.value)}>
+                <option value="WAITING">Waiting</option>
+                <option value="LOADING">Loading</option>
+                <option value="ON THE WAY">On The Way</option>
+                <option value="UNLOADING">Unloading</option>
+              </select>
+            </div>
+          </div>
+
+          {error && <div style={{ color: '#dc2626', fontSize: 'var(--text-xs)', marginBottom: 12 }}>{error}</div>}
+
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button type="button" onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', fontSize: 'var(--text-base)', color: 'var(--gray-600)', fontWeight: 'var(--weight-medium)' }}>
+              Cancel
+            </button>
+            <button type="submit" disabled={saving} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#111827', cursor: saving ? 'default' : 'pointer', fontSize: 'var(--text-base)', color: '#fff', fontWeight: 'var(--weight-semibold)', opacity: saving ? 0.7 : 1 }}>
+              {saving ? 'Saving…' : 'Add Driver'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 export default function CarriersView() {
-  const [selectedDriverId, setSelectedDriverId] = useState(1);
+  const [carriers, setCarriers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDriverId, setSelectedDriverId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDriverMenu, setShowDriverMenu] = useState(false);
+  const [editingContact, setEditingContact] = useState(false);
+  const [contactDraft, setContactDraft] = useState({ name: '', phone: '' });
+  const [contactSaving, setContactSaving] = useState(false);
+  const menuRef = useRef(null);
 
-  const selectedDriver = MOCK_DRIVERS.find(d => d.id === selectedDriverId) || MOCK_DRIVERS[0];
+  const fetchCarriers = useCallback(async (search = searchQuery) => {
+    setLoading(true);
+    try {
+      const params = search ? `?search=${encodeURIComponent(search)}` : '';
+      const res = await fetch(`/api/carriers${params}`);
+      const data = await res.json();
+      setCarriers(data);
+      setSelectedDriverId(prev => {
+        if (prev && data.find(c => c._id === prev)) return prev;
+        return data[0]?._id ?? null;
+      });
+    } catch (err) {
+      console.error('Failed to fetch carriers:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery]);
 
-  const groupedDrivers = MOCK_DRIVERS.reduce((acc, driver) => {
-    if (searchQuery && !driver.name.toLowerCase().includes(searchQuery.toLowerCase())) return acc;
+  useEffect(() => { fetchCarriers(); }, []);
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => fetchCarriers(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // Close driver menu on outside click
+  useEffect(() => {
+    if (!showDriverMenu) return;
+    function handleClick(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setShowDriverMenu(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showDriverMenu]);
+
+  const selectedDriver = carriers.find(c => c._id === selectedDriverId) || carriers[0] || null;
+
+  const groupedDrivers = carriers.reduce((acc, driver) => {
     if (!acc[driver.category]) acc[driver.category] = [];
     acc[driver.category].push(driver);
     return acc;
   }, { Favorites: [], Trucks: [], Vans: [] });
 
-  const activeRoute = driverRoute(selectedDriver.id);
-  const historyRoutes = driverHistoryRoutes(selectedDriver.id);
+  const activeRoute = selectedDriver?.activeRoute;
+  const historyRoutes = selectedDriver?.historyRoutes ?? [];
   const speedKmh = 60;
-  const timeLeftMins = Math.round((activeRoute.distKm / speedKmh) * 60);
+  const timeLeftMins = activeRoute?.distKm ? Math.round((activeRoute.distKm / speedKmh) * 60) : 0;
+
+  // Live status percentages
+  const total = carriers.length || 1;
+  const statusCounts = {
+    'ON THE WAY': carriers.filter(c => c.status === 'ON THE WAY').length,
+    'UNLOADING':  carriers.filter(c => c.status === 'UNLOADING').length,
+    'LOADING':    carriers.filter(c => c.status === 'LOADING').length,
+    'WAITING':    carriers.filter(c => c.status === 'WAITING').length,
+  };
+  const pct = (n) => ((n / total) * 100).toFixed(1);
+
+  async function handleAddDriver(formData) {
+    const res = await fetch('/api/carriers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'Failed to add driver');
+    const created = await res.json();
+    setShowAddModal(false);
+    await fetchCarriers();
+    setSelectedDriverId(created._id);
+  }
+
+  async function handleDeleteDriver() {
+    if (!selectedDriver) return;
+    await fetch(`/api/carriers/${selectedDriver._id}`, { method: 'DELETE' });
+    setShowDeleteConfirm(false);
+    setShowDriverMenu(false);
+    await fetchCarriers();
+  }
+
+  function startEditContact() {
+    setContactDraft({ name: selectedDriver.name, phone: selectedDriver.phone || '' });
+    setEditingContact(true);
+    setShowDriverMenu(false);
+  }
+
+  async function handleSaveContact() {
+    if (!selectedDriver) return;
+    setContactSaving(true);
+    await fetch(`/api/carriers/${selectedDriver._id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: contactDraft.name, phone: contactDraft.phone }),
+    });
+    setEditingContact(false);
+    setContactSaving(false);
+    await fetchCarriers();
+  }
+
+  if (loading && carriers.length === 0) {
+    return (
+      <div className="flex flex-col lg:flex-row h-full bg-white lg:rounded-[20px] overflow-hidden" style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#9ca3af', fontSize: 'var(--text-sm)' }}>Loading carriers…</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col lg:flex-row h-full bg-white lg:rounded-[20px] overflow-hidden">
+    <>
+      <div className="flex flex-col lg:flex-row h-full bg-white lg:rounded-[20px] overflow-hidden">
 
-      {/* ─── Sidebar ─── */}
-      <div className="w-full p-3 lg:w-[280px] flex flex-col bg-white shrink-0 border-b lg:border-b-0 lg:border-r border-[#f1f3f5] z-10">
+        {/* ─── Sidebar ─── */}
+        <div className="w-full p-3 lg:w-[280px] flex flex-col bg-white shrink-0 border-b lg:border-b-0 lg:border-r border-[#f1f3f5] z-10">
 
-        {/* Mobile Header / Toggle */}
-        <div
-          className="lg:hidden flex justify-between items-center px-6 py-5 cursor-pointer hover:bg-gray-50 transition-colors"
-          onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, height: '55px', padding: '10px 10px 10px 10px' }}>
-            <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Driver</span>
-            <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>{selectedDriver.name}</div>
+          {/* Mobile Header / Toggle */}
+          <div
+            className="lg:hidden flex justify-between items-center px-6 py-5 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, height: '55px', padding: '10px' }}>
+              <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Driver</span>
+              <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>{selectedDriver?.name}</div>
+            </div>
+            <ChevronDown style={{ width: 20, height: 20, color: '#9ca3af', transform: isMobileSidebarOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', padding: '0 10px' }} />
           </div>
-          <ChevronDown style={{ width: 20, height: 20, color: '#9ca3af', transform: isMobileSidebarOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', padding: '0px 10px 0px 0px' }} />
-        </div>
 
-        <div className={`${isMobileSidebarOpen ? 'flex' : 'hidden'} lg:flex flex-col h-[50vh] lg:h-auto lg:flex-1`}>
-          {/* Search */}
-          <div style={{ padding: '0px 16px 12px', paddingTop: isMobileSidebarOpen ? 0 : 20 }}>
-            <div style={{ position: 'relative' }}>
-              <Activity style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#9ca3af' }} />
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px 10px 34px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, fontSize: 'var(--text-base)', color: 'var(--gray-900)', outline: 'none' }}
-              />
+          <div className={`${isMobileSidebarOpen ? 'flex' : 'hidden'} lg:flex flex-col h-[50vh] lg:h-auto lg:flex-1`}>
+            {/* Search */}
+            <div style={{ padding: '0px 16px 12px', paddingTop: isMobileSidebarOpen ? 0 : 20 }}>
+              <div style={{ position: 'relative' }}>
+                <Activity style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#9ca3af' }} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px 10px 34px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, fontSize: 'var(--text-base)', color: 'var(--gray-900)', outline: 'none' }}
+                />
+              </div>
+            </div>
+
+            {/* Categories */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {['Favorites', 'Trucks', 'Vans'].map(category => (
+                groupedDrivers[category]?.length > 0 && (
+                  <div key={category} style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>
+                        {category === 'Favorites' ? <span style={{ color: '#fbbf24' }}>★</span> : null}
+                        {category}
+                      </span>
+                      <ChevronDown style={{ width: 14, height: 14, color: '#d1d5db' }} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {groupedDrivers[category].map(driver => (
+                        <DriverListItem
+                          key={driver._id}
+                          driver={driver}
+                          isActive={selectedDriver?._id === driver._id}
+                          onClick={() => {
+                            setSelectedDriverId(driver._id);
+                            setIsMobileSidebarOpen(false);
+                            setEditingContact(false);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )
+              ))}
+              {carriers.length === 0 && !loading && (
+                <div style={{ padding: '24px 16px', color: '#9ca3af', fontSize: 'var(--text-xs)', textAlign: 'center' }}>No drivers found</div>
+              )}
+            </div>
+
+            {/* Add New Vehicle */}
+            <div style={{ padding: 16, borderTop: '1px solid #f1f3f5' }}>
+              <button
+                onClick={() => setShowAddModal(true)}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#111827', color: '#fff', padding: '12px 16px', borderRadius: 12, fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', cursor: 'pointer', border: 'none' }}
+              >
+                <span style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-regular)' }}>+</span> Add New Vehicle
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Categories */}
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            {['Favorites', 'Trucks', 'Vans'].map(category => (
-              <div key={category} style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 16px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>
-                    {category === 'Favorites' ? <span style={{ color: '#fbbf24' }}>★</span> : null}
-                    {category}
-                  </span>
-                  <ChevronDown style={{ width: 14, height: 14, color: '#d1d5db' }} />
+        {/* ─── Main Content ─── */}
+        {selectedDriver ? (
+          <div className="flex-1 flex flex-col bg-[#f9fafb] overflow-y-auto w-full" style={{ padding: '16px' }}>
+
+            {/* Top bar with Driver Profile */}
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center p-4 sm:p-6 lg:px-8 bg-white gap-4">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <img
+                  src={`https://i.pravatar.cc/150?u=${selectedDriver._id}`}
+                  alt={selectedDriver.name}
+                  style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }}
+                />
+                <div>
+                  {editingContact ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <input
+                        value={contactDraft.name}
+                        onChange={e => setContactDraft(d => ({ ...d, name: e.target.value }))}
+                        style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', border: '1px solid #e5e7eb', borderRadius: 6, padding: '3px 8px', outline: 'none', width: 200 }}
+                      />
+                      <input
+                        value={contactDraft.phone}
+                        onChange={e => setContactDraft(d => ({ ...d, phone: e.target.value }))}
+                        style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', border: '1px solid #e5e7eb', borderRadius: 6, padding: '3px 8px', outline: 'none', width: 200, fontFamily: 'var(--font-mono)' }}
+                      />
+                      <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+                        <button onClick={handleSaveContact} disabled={contactSaving} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6, backgroundColor: '#1f8a3e', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                          <Check style={{ width: 12, height: 12 }} /> Save
+                        </button>
+                        <button onClick={() => setEditingContact(false)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6, backgroundColor: '#f3f4f6', color: '#374151', border: 'none', cursor: 'pointer', fontSize: 12 }}>
+                          <X style={{ width: 12, height: 12 }} /> Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>{selectedDriver.name}</div>
+                        <button onClick={startEditContact} title="Edit contact" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d1d5db', padding: 2, display: 'flex', alignItems: 'center' }}>
+                          <Pencil style={{ width: 13, height: 13 }} />
+                        </button>
+                      </div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-regular)', fontFamily: 'var(--font-mono)' }}>{selectedDriver.phone}</div>
+                    </>
+                  )}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {groupedDrivers[category].map(driver => (
-                    <DriverListItem
-                      key={driver.id}
-                      driver={driver}
-                      isActive={selectedDriver.id === driver.id}
-                      onClick={() => {
-                        setSelectedDriverId(driver.id);
-                        setIsMobileSidebarOpen(false);
-                      }}
-                    />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <button style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '50%', color: '#4b5563', cursor: 'pointer' }}>
+                  <MessageCircle style={{ width: 18, height: 18 }} />
+                </button>
+                <button style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '50%', color: '#4b5563', cursor: 'pointer' }}>
+                  <Phone style={{ width: 18, height: 18 }} />
+                </button>
+                {/* MoreHorizontal menu */}
+                <div ref={menuRef} style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setShowDriverMenu(v => !v)}
+                    style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer' }}
+                  >
+                    <MoreHorizontal style={{ width: 20, height: 20 }} />
+                  </button>
+                  {showDriverMenu && (
+                    <div style={{ position: 'absolute', right: 0, top: 42, backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.10)', zIndex: 50, minWidth: 160, overflow: 'hidden' }}>
+                      <button
+                        onClick={startEditContact}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 'var(--text-sm)', color: 'var(--gray-700)', textAlign: 'left' }}
+                      >
+                        <Pencil style={{ width: 14, height: 14 }} /> Edit Contact
+                      </button>
+                      <button
+                        onClick={() => { setShowDeleteConfirm(true); setShowDriverMenu(false); }}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 'var(--text-sm)', color: '#dc2626', textAlign: 'left' }}
+                      >
+                        <Trash2 style={{ width: 14, height: 14 }} /> Delete Driver
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Status strip */}
+            <div className="flex flex-wrap gap-4 px-4 sm:px-6 lg:px-8 py-4 bg-white border-t border-[#f1f3f5]">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-bold)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Status</span>
+                <StatusBadge status={selectedDriver.status} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-bold)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Vehicle</span>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-700)', fontWeight: 'var(--weight-medium)' }}>{selectedDriver.vehicleType}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-bold)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Category</span>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-700)', fontWeight: 'var(--weight-medium)' }}>{selectedDriver.category}</span>
+              </div>
+            </div>
+
+            {/* Vehicle Specs & Image Overlay */}
+            <div className="p-4 sm:p-6 lg:px-8 bg-white">
+              <div className="flex flex-wrap-reverse items-center bg-[#f8fafc] rounded-[20px] p-6 lg:p-8 overflow-hidden gap-8">
+
+                {/* Specs Left Section */}
+                <div style={{ flex: '1 1 300px' }}>
+                  <div style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)', lineHeight: 'var(--leading-snug)', marginBottom: 20 }}>{selectedDriver.vehicleModel || '—'}</div>
+
+                  {selectedDriver.specs ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '20px 20px', marginBottom: 28 }}>
+                      {[['Payload', selectedDriver.specs.payload], ['Load Volume', selectedDriver.specs.volume], ['Load Length', selectedDriver.specs.length], ['Load Width', selectedDriver.specs.width]].map(([label, val]) => (
+                        val && (
+                          <div key={label}>
+                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>{label}</div>
+                            <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{val}</div>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {selectedDriver.specs?.plate && (
+                    <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+                      <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '12px 16px 8px', backgroundColor: '#fff', position: 'relative', minWidth: '120px' }}>
+                        <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', position: 'absolute', top: 4, left: 0, width: '100%', textAlign: 'center', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)' }}>UGANDA 2024</div>
+                        <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-900)', marginTop: 4, letterSpacing: '0.08em', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{selectedDriver.specs.plate}</div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--gray-500)', textDecoration: 'underline', cursor: 'pointer' }}>Documents</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Image Right Section */}
+                <div style={{ flex: '1 1 300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img
+                    src={selectedDriver.vehicleType === 'Truck' ? '/images/vehicles/volvo_truck.png' : '/images/vehicles/volkswagen_van.png'}
+                    alt={selectedDriver.vehicleModel}
+                    style={{ width: '100%', maxWidth: '400px', maxHeight: '250px', objectFit: 'contain', filter: 'drop-shadow(0 20px 25px rgba(0,0,0,0.15))' }}
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Section (Routes & Stats) */}
+            <div className="flex flex-wrap p-4 sm:p-6 lg:p-8 gap-8 bg-white flex-1">
+
+              {/* Routes Panel */}
+              <div className="flex-1 min-w-[280px] flex flex-col">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>Routes</div>
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--gray-400)', borderBottom: '2px solid transparent', paddingBottom: 4, cursor: 'pointer' }}>History</div>
+                </div>
+
+                <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)', marginBottom: 10 }}>NOW ON THE WAY</div>
+
+                {activeRoute ? (
+                  <>
+                    <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', marginBottom: 3, letterSpacing: 'var(--tracking-tight)' }}>
+                      {activeRoute.packages} packages
+                    </div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', marginBottom: 16, lineHeight: 'var(--leading-normal)' }}>
+                      {activeRoute.from} → {activeRoute.to}
+                    </div>
+
+                    {/* Real OpenLayers route map */}
+                    <div style={{ marginBottom: 16 }}>
+                      <RouteMap activeRoute={activeRoute} />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
+                      <div>
+                        <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Distance</div>
+                        <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{activeRoute.distKm} km</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Time Left</div>
+                        <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{timeLeftMins} min</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Packages</div>
+                        <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{activeRoute.packages}</div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ color: '#9ca3af', fontSize: 'var(--text-xs)', marginBottom: 24 }}>No active route assigned</div>
+                )}
+
+                <div style={{ flex: 1, borderTop: '1px solid #f1f3f5', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {historyRoutes.map((route, i) => (
+                    <div key={i}>
+                      <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', marginBottom: 2 }}>{route.packages} packages</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', lineHeight: 'var(--leading-normal)' }}>{route.from} → {route.to}</div>
+                    </div>
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Add New Vehicle */}
-          <div style={{ padding: 16, borderTop: '1px solid #f1f3f5' }}>
-            <button style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#111827', color: '#fff', padding: '12px 16px', borderRadius: 12, fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', cursor: 'pointer', border: 'none' }}>
-              <span style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-regular)' }}>+</span> Add New Vehicle
-            </button>
+              {/* Stats Panel */}
+              <div className="flex-1 min-w-[280px] flex flex-col">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                  <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>Driver Statistics</div>
+                  <ArrowUpRight style={{ width: 16, height: 16, color: '#9ca3af' }} />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>FLEET STATUS DISTRIBUTION</div>
+                </div>
+
+                {/* Live status bar */}
+                <div style={{ display: 'flex', marginBottom: 8 }}>
+                  {['ON THE WAY', 'UNLOADING', 'LOADING', 'WAITING'].map(s => (
+                    statusCounts[s] > 0 && (
+                      <div key={s} style={{ flex: statusCounts[s], fontSize: 'var(--text-xs)', color: 'var(--gray-500)', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 4 }}>
+                        {s.charAt(0) + s.slice(1).toLowerCase()}
+                      </div>
+                    )
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', height: 40, borderRadius: 8, overflow: 'hidden', marginBottom: 20 }}>
+                  {statusCounts['ON THE WAY'] > 0 && <div style={{ flex: statusCounts['ON THE WAY'], backgroundColor: '#eef2ff', color: '#111827', display: 'flex', alignItems: 'center', paddingLeft: 12, fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', fontFamily: 'var(--font-mono)' }}>{pct(statusCounts['ON THE WAY'])}%</div>}
+                  {statusCounts['UNLOADING'] > 0  && <div style={{ flex: statusCounts['UNLOADING'],  backgroundColor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', paddingLeft: 12, fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', fontFamily: 'var(--font-mono)' }}>{pct(statusCounts['UNLOADING'])}%</div>}
+                  {statusCounts['LOADING'] > 0    && <div style={{ flex: statusCounts['LOADING'],    backgroundColor: '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', paddingLeft: 12, fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', fontFamily: 'var(--font-mono)' }}>{pct(statusCounts['LOADING'])}%</div>}
+                  {statusCounts['WAITING'] > 0    && <div style={{ flex: statusCounts['WAITING'],    backgroundColor: '#111827', color: '#fff', display: 'flex', alignItems: 'center', paddingLeft: 12, fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', fontFamily: 'var(--font-mono)' }}>{pct(statusCounts['WAITING'])}%</div>}
+                </div>
+
+                {/* Chart Legend Breakdown */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
+                  {[
+                    { label: 'On the Way', key: 'ON THE WAY' },
+                    { label: 'Unloading',  key: 'UNLOADING' },
+                    { label: 'Loading',    key: 'LOADING' },
+                    { label: 'Waiting',    key: 'WAITING' },
+                  ].map(({ label, key }) => (
+                    <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', color: 'var(--gray-500)', fontWeight: 'var(--weight-regular)' }}>
+                      <span>{label}</span>
+                      <span style={{ color: '#111827', fontWeight: 600 }}>
+                        {statusCounts[key]} driver{statusCounts[key] !== 1 ? 's' : ''}
+                        <span style={{ color: '#9ca3af', fontWeight: 500, marginLeft: 16 }}>{pct(statusCounts[key])}%</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <DriverStatsChart />
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-[#f9fafb]">
+            <div style={{ color: '#9ca3af', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
+              <div style={{ marginBottom: 8 }}>No drivers yet</div>
+              <button onClick={() => setShowAddModal(true)} style={{ color: '#1f8a3e', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>Add your first driver</button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ─── Main Content ─── */}
-      <div className="flex-1 flex flex-col bg-[#f9fafb] overflow-y-auto w-full" style={{ padding: '16px' }}>
+      {/* Add Driver Modal */}
+      {showAddModal && (
+        <AddDriverModal
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAddDriver}
+        />
+      )}
 
-        {/* Top bar with Driver Profile */}
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center p-4 sm:p-6 lg:px-8 bg-white gap-4">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <img
-              src={`https://i.pravatar.cc/150?u=${selectedDriver.id}`}
-              alt={selectedDriver.name}
-              style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }}
-            />
-            <div>
-              <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>{selectedDriver.name}</div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-regular)', fontFamily: 'var(--font-mono)' }}>{selectedDriver.phone}</div>
+      {/* Delete Confirmation */}
+      {showDeleteConfirm && selectedDriver && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div style={{ backgroundColor: '#fff', borderRadius: 16, padding: 28, maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-900)', marginBottom: 8 }}>Delete {selectedDriver.name}?</div>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--gray-500)', marginBottom: 24 }}>This action cannot be undone. The driver and all their data will be permanently removed.</div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowDeleteConfirm(false)} style={{ padding: '9px 18px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', fontSize: 'var(--text-base)', color: 'var(--gray-600)', fontWeight: 'var(--weight-medium)' }}>
+                Cancel
+              </button>
+              <button onClick={handleDeleteDriver} style={{ padding: '9px 18px', borderRadius: 10, border: 'none', background: '#dc2626', cursor: 'pointer', fontSize: 'var(--text-base)', color: '#fff', fontWeight: 'var(--weight-semibold)' }}>
+                Delete
+              </button>
             </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '50%', color: '#4b5563', cursor: 'pointer' }}>
-              <MessageCircle style={{ width: 18, height: 18 }} />
-            </button>
-            <button style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', border: 'none', borderRadius: '50%', color: '#4b5563', cursor: 'pointer' }}>
-              <Phone style={{ width: 18, height: 18 }} />
-            </button>
-            <button style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer' }}>
-              <MoreHorizontal style={{ width: 20, height: 20 }} />
-            </button>
           </div>
         </div>
-
-        {/* Vehicle Specs & Image Overlay */}
-        <div className="p-4 sm:p-6 lg:px-8 bg-white">
-          <div className="flex flex-wrap-reverse items-center bg-[#f8fafc] rounded-[20px] p-6 lg:p-8 overflow-hidden gap-8">
-
-            {/* Specs Left Section */}
-            <div style={{ flex: '1 1 300px' }}>
-              <div style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)', lineHeight: 'var(--leading-snug)', marginBottom: 20 }}>{selectedDriver.vehicleModel}</div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '20px 20px', marginBottom: 28 }}>
-                <div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Payload</div>
-                  <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{selectedDriver.specs.payload}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Load Volume</div>
-                  <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{selectedDriver.specs.volume}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Load Length</div>
-                  <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{selectedDriver.specs.length}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Load Width</div>
-                  <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{selectedDriver.specs.width}</div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-                <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '12px 16px 8px', backgroundColor: '#fff', position: 'relative', minWidth: '120px' }}>
-                  <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', position: 'absolute', top: 4, left: 0, width: '100%', textAlign: 'center', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)' }}>UGANDA 2024</div>
-                  <div style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-900)', marginTop: 4, letterSpacing: '0.08em', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{selectedDriver.specs.plate}</div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)', color: 'var(--gray-500)', textDecoration: 'underline', cursor: 'pointer' }}>Documents</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Image Right Section */}
-            <div style={{ flex: '1 1 300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img
-                src={selectedDriver.image}
-                alt={selectedDriver.vehicleModel}
-                style={{ width: '100%', maxWidth: '400px', maxHeight: '250px', objectFit: 'contain', filter: 'drop-shadow(0 20px 25px rgba(0,0,0,0.15))' }}
-              />
-            </div>
-
-          </div>
-        </div>
-
-        {/* Bottom Section (Routes & Stats) */}
-        <div className="flex flex-wrap p-4 sm:p-6 lg:p-8 gap-8 bg-white flex-1">
-
-          {/* Routes Panel */}
-          <div className="flex-1 min-w-[280px] flex flex-col">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>Routes</div>
-              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-medium)', color: 'var(--gray-400)', borderBottom: '2px solid transparent', paddingBottom: 4, cursor: 'pointer' }}>History</div>
-            </div>
-
-            <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)', marginBottom: 10 }}>NOW ON THE WAY</div>
-
-            <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', marginBottom: 3, letterSpacing: 'var(--tracking-tight)' }}>
-              {activeRoute.packages} packages
-            </div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', marginBottom: 16, lineHeight: 'var(--leading-normal)' }}>
-              {activeRoute.from} → {activeRoute.to}
-            </div>
-
-            <div style={{ backgroundColor: '#f3f4f6', borderRadius: 12, height: 120, marginBottom: 16, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: '80%', height: 2, backgroundColor: '#d1d5db', position: 'absolute', zIndex: 1 }}></div>
-              <div style={{ width: '60%', height: 2, backgroundColor: '#1f8a3e', position: 'absolute', zIndex: 2, left: '10%' }}></div>
-              <div style={{ position: 'absolute', left: '10%', zIndex: 3, width: 14, height: 14, borderRadius: '50%', backgroundColor: '#fff', border: '3px solid #111827' }}></div>
-              <div style={{ position: 'absolute', left: '70%', zIndex: 3, width: 14, height: 14, borderRadius: '50%', backgroundColor: '#fff', border: '3px solid #111827' }}></div>
-              <div style={{ width: '100%', height: '100%', backgroundImage: 'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)', backgroundSize: '20px 20px', position: 'absolute' }}></div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-              <div>
-                <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Distance</div>
-                <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{activeRoute.distKm} km</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Time Left</div>
-                <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{timeLeftMins} min</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Packages</div>
-                <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)' }}>{activeRoute.packages}</div>
-              </div>
-            </div>
-
-            <div style={{ flex: 1, borderTop: '1px solid #f1f3f5', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {historyRoutes.map((route, i) => (
-                <div key={i}>
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', marginBottom: 2 }}>{route.packages} packages</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-400)', lineHeight: 'var(--leading-normal)' }}>{route.from} → {route.to}</div>
-                </div>
-              ))}
-            </div>
-
-          </div>
-
-          {/* Stats Panel */}
-          <div className="flex-1 min-w-[280px] flex flex-col">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <div style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>Driver Statistics</div>
-              <ArrowUpRight style={{ width: 16, height: 16, color: '#9ca3af' }} />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>AVERAGE TIME PER DAY BY CATEGORY</div>
-              <div style={{ display: 'flex', gap: 12, fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)' }}>
-                <span>W</span>
-                <span style={{ color: '#111827' }}>M</span>
-                <span>6M</span>
-                <span>Y</span>
-              </div>
-            </div>
-
-            {/* Horizontal Bar Chart (Category Stats) */}
-            <div style={{ display: 'flex', marginBottom: 8 }}>
-              <div style={{ flex: 3.97, fontSize: 'var(--text-xs)', color: 'var(--gray-500)', marginBottom: 4 }}>On the Way</div>
-              <div style={{ flex: 2.83, fontSize: 'var(--text-xs)', color: 'var(--gray-500)', marginBottom: 4 }}>Unloading</div>
-              <div style={{ flex: 1.74, fontSize: 'var(--text-xs)', color: 'var(--gray-500)', marginBottom: 4 }}>Loading</div>
-              <div style={{ flex: 1.46, fontSize: 'var(--text-xs)', color: 'var(--gray-500)', marginBottom: 4 }}>Waiting</div>
-            </div>
-
-            <div style={{ display: 'flex', height: 40, borderRadius: 8, overflow: 'hidden', marginBottom: 20 }}>
-              <div style={{ flex: 3.97, backgroundColor: '#eef2ff', color: '#111827', display: 'flex', alignItems: 'center', paddingLeft: 12, fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', fontFamily: 'var(--font-mono)' }}>39.7%</div>
-              <div style={{ flex: 2.83, backgroundColor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', paddingLeft: 12, fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', fontFamily: 'var(--font-mono)' }}>28.3%</div>
-              <div style={{ flex: 1.74, backgroundColor: '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', paddingLeft: 12, fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', fontFamily: 'var(--font-mono)' }}>17.4%</div>
-              <div style={{ flex: 1.46, backgroundColor: '#111827', color: '#fff', display: 'flex', alignItems: 'center', paddingLeft: 12, fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', fontFamily: 'var(--font-mono)' }}>14.6%</div>
-            </div>
-
-            {/* Chart Legend Breakdown */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', color: 'var(--gray-500)', fontWeight: 'var(--weight-regular)' }}>
-                <span>On the Way</span>
-                <span style={{ color: '#111827', fontWeight: 600 }}>3 hr 10 min <span style={{ color: '#9ca3af', fontWeight: 500, marginLeft: 16 }}>39.7%</span></span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', color: 'var(--gray-500)', fontWeight: 'var(--weight-regular)' }}>
-                <span>Unloading</span>
-                <span style={{ color: '#111827', fontWeight: 600 }}>2 hr 15 min <span style={{ color: '#9ca3af', fontWeight: 500, marginLeft: 16 }}>28.3%</span></span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', color: 'var(--gray-500)', fontWeight: 'var(--weight-regular)' }}>
-                <span>Loading</span>
-                <span style={{ color: '#111827', fontWeight: 600 }}>1 hr 23 min <span style={{ color: '#9ca3af', fontWeight: 500, marginLeft: 16 }}>17.4%</span></span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', color: 'var(--gray-500)', fontWeight: 'var(--weight-regular)' }}>
-                <span>Waiting</span>
-                <span style={{ color: '#111827', fontWeight: 600 }}>1 hr 10 min <span style={{ color: '#9ca3af', fontWeight: 500, marginLeft: 16 }}>14.6%</span></span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>WORKING TIME PER DAY</div>
-              <div style={{ display: 'flex', gap: 12, fontSize: 'var(--text-xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-medium)' }}>
-                <span>W</span>
-                <span style={{ color: '#111827' }}>M</span>
-                <span>6M</span>
-                <span>Y</span>
-              </div>
-            </div>
-
-            {/* Vertical Bar Chart (Working Time) */}
-            <DriverStatsChart />
-
-          </div>
-
-        </div>
-
-      </div>
-    </div>
+      )}
+    </>
   );
 }

@@ -154,7 +154,6 @@ async function seed() {
   await Insight.deleteMany({ source: "Euromonitor" });
 
   const createdInsights = await Insight.insertMany(insightsData);
-  console.log(`✓ Seeded ${createdInsights.length} insights`);
 
   process.exit(0);
 }

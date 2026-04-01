@@ -5,6 +5,15 @@ import mongoose from "mongoose";
 import marketRoutes from "./routes/markets.js";
 import priceRoutes from "./routes/prices.js";
 import insightRoutes from "./routes/insights.js";
+import assetRoutes from "./routes/assets.js";
+import transactionRoutes from "./routes/transactions.js";
+import paymentRoutes from "./routes/payments.js";
+import reportRoutes from "./routes/reports.js";
+import statementRoutes from "./routes/statements.js";
+import carrierRoutes from "./routes/carriers.js";
+import whatsappRoutes from "./routes/whatsapp.js";
+import fleetRoutes from "./routes/fleet.js";
+import intelligenceRoutes from "./routes/intelligence.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,6 +26,15 @@ app.use(express.json());
 app.use("/api/markets", marketRoutes);
 app.use("/api/prices", priceRoutes);
 app.use("/api/insights", insightRoutes);
+app.use("/api/assets", assetRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/statements", statementRoutes);
+app.use("/api/carriers", carrierRoutes);
+app.use("/api/whatsapp", whatsappRoutes);
+app.use("/api/fleet", fleetRoutes);
+app.use("/api/intelligence", intelligenceRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date() });
@@ -24,14 +42,11 @@ app.get("/api/health", (req, res) => {
 
 function startServer(port) {
   if (process.env.VERCEL) {
-    console.log(
-      "Vercel environment detected. Internal server listener skipped.",
-    );
+    // Vercel environment detected — skip internal server listener
     return;
   }
 
   const server = app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
   });
   server.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
@@ -52,7 +67,6 @@ mongoose
     socketTimeoutMS: 45000,
   })
   .then(() => {
-    console.log("Connected to MongoDB");
     startServer(PORT);
   })
   .catch((err) => {
