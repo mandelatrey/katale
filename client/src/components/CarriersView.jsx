@@ -13,6 +13,7 @@ import LineString from 'ol/geom/LineString';
 import { fromLonLat } from 'ol/proj';
 import { Style, Fill, Stroke, Circle as CircleStyle } from 'ol/style';
 import { MapPin, Clock, MessageCircle, Phone, MoreHorizontal, ChevronDown, Truck, Package, Activity, ArrowUpRight, X, Check, Pencil, Trash2 } from './Icons';
+import Tooltip from './Tooltip';
 
 const STATUS_COLORS = {
   'ON THE WAY': { text: '#1f8a3e', bg: '#e6f2ea' },
@@ -21,12 +22,29 @@ const STATUS_COLORS = {
   'UNLOADING':  { text: '#3b82f6', bg: '#dbeafe' },
 };
 
-function StatusBadge({ status }) {
+const STATUS_TIPS = {
+  'ON THE WAY': 'This driver is currently on the road with a delivery',
+  'LOADING':    'This driver is at the market loading goods onto their vehicle',
+  'WAITING':    'This driver is available and waiting to be assigned a delivery',
+  'UNLOADING':  'This driver has arrived and is unloading the goods',
+};
+
+function StatusBadge({ status, compact = false }) {
   const color = STATUS_COLORS[status] || { text: '#6b7280', bg: '#f3f4f6' };
+  if (compact) {
+    // Inline text-only badge for list items (matches reference)
+    return (
+      <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: color.text }}>
+        {status}
+      </span>
+    );
+  }
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: color.text, flexShrink: 0 }}></span>
-      <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--gray-500)' }}>{status}</span>
+      <Tooltip text={STATUS_TIPS[status] || status}>
+        <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-medium)', letterSpacing: 'var(--tracking-wide)', color: 'var(--gray-500)' }}>{status}</span>
+      </Tooltip>
     </div>
   );
 }
@@ -56,7 +74,7 @@ function DriverListItem({ driver, isActive, onClick }) {
         </div>
       </div>
       <div style={{ flexShrink: 0, marginLeft: 8 }}>
-        <StatusBadge status={driver.status} />
+        <StatusBadge status={driver.status} compact />
       </div>
     </div>
   );
@@ -99,15 +117,15 @@ function DriverStatsChart() {
           legend: { display: false },
           tooltip: {
             backgroundColor: 'rgba(17,24,39,0.92)',
-            titleFont: { size: 11, family: 'Inter' },
-            bodyFont: { size: 11, family: 'Inter' },
+            titleFont: { size: 11, family: 'IBM Plex Sans' },
+            bodyFont: { size: 11, family: 'IBM Plex Sans' },
             padding: 10,
             cornerRadius: 8,
           }
         },
         scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: '#9ca3af' }, border: { display: false } },
-          y: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: '#9ca3af', stepSize: 4, max: 8 }, border: { display: false } }
+          x: { grid: { display: false }, ticks: { font: { size: 10, family: 'IBM Plex Sans' }, color: '#9ca3af' }, border: { display: false } },
+          y: { grid: { display: false }, ticks: { font: { size: 10, family: 'IBM Plex Sans' }, color: '#9ca3af', stepSize: 4, max: 8 }, border: { display: false } }
         }
       }
     });
@@ -506,7 +524,8 @@ export default function CarriersView() {
                 onClick={() => setShowAddModal(true)}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#111827', color: '#fff', padding: '12px 16px', borderRadius: 12, fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', cursor: 'pointer', border: 'none' }}
               >
-                <span style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-regular)' }}>+</span> Add New Vehicle
+                <span style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--weight-regular)' }}>+</span>
+                <Tooltip text="Register a driver and their vehicle so you can assign them to deliveries"><span>Add New Vehicle</span></Tooltip>
               </button>
             </div>
           </div>
@@ -514,10 +533,10 @@ export default function CarriersView() {
 
         {/* ─── Main Content ─── */}
         {selectedDriver ? (
-          <div className="flex-1 flex flex-col bg-[#f9fafb] overflow-y-auto w-full" style={{ padding: '16px' }}>
+          <div className="flex-1 flex flex-col bg-white overflow-y-auto w-full">
 
             {/* Top bar with Driver Profile */}
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center p-4 sm:p-6 lg:px-8 bg-white gap-4">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center bg-white gap-4" style={{ padding: '20px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <img
                   src={`https://i.pravatar.cc/150?u=${selectedDriver._id}`}
@@ -595,7 +614,7 @@ export default function CarriersView() {
             </div>
 
             {/* Status strip */}
-            <div className="flex flex-wrap gap-4 px-4 sm:px-6 lg:px-8 py-4 bg-white border-t border-[#f1f3f5]">
+            <div className="flex flex-wrap gap-4 bg-white border-t border-[#f1f3f5]" style={{ padding: '12px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontWeight: 'var(--weight-bold)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Status</span>
                 <StatusBadge status={selectedDriver.status} />
@@ -611,8 +630,8 @@ export default function CarriersView() {
             </div>
 
             {/* Vehicle Specs & Image Overlay */}
-            <div className="p-4 sm:p-6 lg:px-8 bg-white">
-              <div className="flex flex-wrap-reverse items-center bg-[#f8fafc] rounded-[20px] p-6 lg:p-8 overflow-hidden gap-8">
+            <div className="bg-white" style={{ padding: '0 24px 24px' }}>
+              <div className="flex flex-wrap-reverse items-center rounded-[16px] overflow-hidden gap-8" style={{ backgroundColor: '#f4f6f9', padding: '28px 32px' }}>
 
                 {/* Specs Left Section */}
                 <div style={{ flex: '1 1 300px' }}>
@@ -657,7 +676,7 @@ export default function CarriersView() {
             </div>
 
             {/* Bottom Section (Routes & Stats) */}
-            <div className="flex flex-wrap p-4 sm:p-6 lg:p-8 gap-8 bg-white flex-1">
+            <div className="flex flex-wrap gap-8 bg-white flex-1" style={{ padding: '24px 24px 32px' }}>
 
               {/* Routes Panel */}
               <div className="flex-1 min-w-[280px] flex flex-col">
@@ -679,6 +698,11 @@ export default function CarriersView() {
 
                     {/* Real OpenLayers route map */}
                     <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-500)', marginBottom: 6 }}>
+                        <Tooltip text="A map showing where this driver started and where they are headed">
+                          <span>Active Route</span>
+                        </Tooltip>
+                      </div>
                       <RouteMap activeRoute={activeRoute} />
                     </div>
 

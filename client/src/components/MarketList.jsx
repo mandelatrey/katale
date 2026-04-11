@@ -4,7 +4,7 @@ export default function MarketList({ markets, prices, selectedMarket, onSelect, 
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', color: '#9ca3af' }}>
-        <div style={{ width: 24, height: 24, border: '2px solid #e5e7eb', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: 12 }}></div>
+        <div style={{ width: 24, height: 24, border: '2px solid #e5e7eb', borderTopColor: '#1f8a3e', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: 12 }}></div>
         <div style={{ fontSize: 12 }}>Loading prices…</div>
       </div>
     );
@@ -61,25 +61,25 @@ export default function MarketList({ markets, prices, selectedMarket, onSelect, 
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0, fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500, color: '#9ca3af' }}>
-                <span>HWY: {m.region?.slice(0, 3)}</span>
-                <span>LOC: {m.district}</span>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <span style={{ fontSize: 9, fontWeight: 500, color: '#6b7280', backgroundColor: '#f3f4f6', borderRadius: 4, padding: '2px 5px' }}>{m.region}</span>
+                <span style={{ fontSize: 9, fontWeight: 500, color: '#6b7280', backgroundColor: '#f3f4f6', borderRadius: 4, padding: '2px 5px' }}>{m.district}</span>
               </div>
             </div>
 
             {/* Row 2 — prices (single line) */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10, paddingTop: 8, borderTop: '1px dashed #e5e7eb' }}>
               <span>
-                <span style={{ color: '#9ca3af' }}>Retail: </span>
-                <span style={{ color: '#111827', fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11 }}>{retail}</span>
+                <span style={{ color: '#9ca3af' }}>Retail </span>
+                <span style={{ color: '#111827', fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>{retail}</span>
               </span>
               <span>
-                <span style={{ color: '#9ca3af' }}>Wholesale: </span>
-                <span style={{ fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11, color: isSelected ? '#1d4ed8' : '#dc2626' }}>{wholesale}</span>
+                <span style={{ color: '#9ca3af' }}>Wholesale </span>
+                <span style={{ fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11, fontVariantNumeric: 'tabular-nums', color: isSelected ? '#1d4ed8' : '#dc2626' }}>{wholesale}</span>
               </span>
               <span>
-                <span style={{ color: '#9ca3af' }}>Discounted: </span>
-                <span style={{ color: '#15803d', fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11 }}>{discounted}</span>
+                <span style={{ color: '#9ca3af' }}>Market </span>
+                <span style={{ color: '#15803d', fontWeight: 500, fontFamily: 'var(--font-mono)', fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>{discounted}</span>
               </span>
             </div>
           </div>

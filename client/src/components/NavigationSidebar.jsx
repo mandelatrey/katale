@@ -9,6 +9,15 @@ export default function NavigationSidebar({ onNavigate }) {
   const location = useLocation();
   const [pendingPayments, setPendingPayments] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('nav-collapsed') === 'true'; } catch { return false; }
+  });
+
+  function toggleCollapse() {
+    const next = !collapsed;
+    setCollapsed(next);
+    try { localStorage.setItem('nav-collapsed', String(next)); } catch {}
+  }
 
   useEffect(() => {
     fetch(`${API_URL}/payments?status=pending&limit=100`)
@@ -31,11 +40,6 @@ export default function NavigationSidebar({ onNavigate }) {
     { label: 'Assets', icon: <Truck className="h-4 w-4" />, route: ROUTES.ASSETS },
     { label: 'Reports', icon: <FileText className="h-4 w-4" />, route: ROUTES.REPORTS },
     { label: 'Statements', icon: <FileText className="h-4 w-4" />, route: ROUTES.STATEMENTS },
-  ];
-
-  const bottomMenuItems = [
-    { label: 'Staff', icon: <Users className="h-4 w-4" /> },
-    { label: 'Company settings', icon: <Settings className="h-4 w-4" /> },
   ];
 
   // Auto-expand "More" if current route is one of the more items
@@ -73,31 +77,56 @@ export default function NavigationSidebar({ onNavigate }) {
   );
 
   return (
-    <div className="global-nav">
-      <div className="global-nav-header">
-        <div className="global-nav-logo">A</div>
-        <div className="global-nav-brand">
-          <span className="global-nav-title">Agribridge</span>
-          <span className="global-nav-subtitle">Company</span>
+    <div className={`global-nav${collapsed ? ' collapsed' : ''}`}>
+      {/* ── Header: logo + collapse toggle ── */}
+      {collapsed ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0 12px', gap: 12 }}>
+          <img src="/assets/agribridge-icon.svg" alt="Agribridge" style={{ width: 32, height: 32 }} />
+          <button
+            onClick={toggleCollapse}
+            title="Expand sidebar"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 4, display: 'flex', alignItems: 'center', borderRadius: 6, transition: 'color 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
+          >
+            <ChevronDown style={{ width: 13, height: 13, transform: 'rotate(-90deg)' }} />
+          </button>
         </div>
-      </div>
+      ) : (
+        <div className="global-nav-header">
+          <img src="/assets/agribridge-logo-white.svg" alt="Agribridge" style={{ height: 30, width: 'auto', flexShrink: 0 }} />
+          <button
+            onClick={toggleCollapse}
+            title="Collapse sidebar"
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 4, display: 'flex', alignItems: 'center', borderRadius: 6, transition: 'color 0.15s', flexShrink: 0 }}
+            onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
+          >
+            <ChevronDown style={{ width: 13, height: 13, transform: 'rotate(90deg)' }} />
+          </button>
+        </div>
+      )}
 
       <div className="global-nav-section">
         <div className="global-nav-menu">
           {mainMenuItems.map(renderNavItem)}
 
-          {/* More section */}
-          <div
-            className="nav-item"
-            onClick={() => setMoreOpen(o => !o)}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="nav-item-icon">
-              {(moreOpen || isMoreRoute) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </div>
-            <span>More</span>
-          </div>
-          {(moreOpen || isMoreRoute) && moreMenuItems.map(renderNavItem)}
+          {/* More section — hidden when collapsed */}
+          {!collapsed && (
+            <>
+              <div
+                className="nav-item"
+                onClick={() => setMoreOpen(o => !o)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="nav-item-icon">
+                  {(moreOpen || isMoreRoute) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+                <span>More</span>
+              </div>
+              {(moreOpen || isMoreRoute) && moreMenuItems.map(renderNavItem)}
+            </>
+          )}
         </div>
       </div>
 
@@ -105,21 +134,19 @@ export default function NavigationSidebar({ onNavigate }) {
 
       <div className="global-nav-section">
         <div className="global-nav-menu">
-          {bottomMenuItems.map((item) => (
-            <div key={item.label} className="nav-item" style={{ opacity: 0.5, cursor: 'default' }}>
-              <div className="nav-item-icon">{item.icon}</div>
-              <span>{item.label}</span>
-            </div>
-          ))}
-          <div className="nav-item mt-2">
+          <div className="nav-item">
             <div className="nav-item-icon"><Bell className="h-4 w-4" /></div>
-            <span>Notification</span>
+            <span>Notifications</span>
             <span className="nav-item-badge">3</span>
           </div>
           <div className="nav-item">
             <div className="nav-item-icon"><MessageSquare className="h-4 w-4" /></div>
             <span>Chat</span>
             <span className="nav-item-badge">5</span>
+          </div>
+          <div className="nav-item" style={{ opacity: 0.45, cursor: 'default' }}>
+            <div className="nav-item-icon"><Settings className="h-4 w-4" /></div>
+            <span>Settings</span>
           </div>
         </div>
       </div>
@@ -128,13 +155,17 @@ export default function NavigationSidebar({ onNavigate }) {
         <div className="user-avatar">
           <div className="w-full h-full bg-gray-600 flex items-center justify-center text-white text-xs">IM</div>
         </div>
-        <div className="user-info">
-          <span className="user-name">Ismail M.</span>
-          <span className="user-role">Broker</span>
-        </div>
-        <div className="ml-auto text-gray-500 hover:text-white transition-colors">
-          <LogOut className="h-4 w-4" />
-        </div>
+        {!collapsed && (
+          <>
+            <div className="user-info">
+              <span className="user-name">Ismail M.</span>
+              <span className="user-role">Broker</span>
+            </div>
+            <div className="ml-auto text-gray-500 hover:text-white transition-colors">
+              <LogOut className="h-4 w-4" />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

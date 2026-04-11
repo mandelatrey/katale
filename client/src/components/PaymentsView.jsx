@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, ArrowUpRight, ArrowDownRight } from './Icons';
+import Tooltip from './Tooltip';
 
 const API_URL = '/api';
 const UGX_TO_USD = 3700;
@@ -139,10 +140,10 @@ export default function PaymentsView({ currency = 'UGX', isMobile = false }) {
       })()}
 
       <div className="dash-cards">
-        <SummaryCard icon={<CreditCard size={18} />} label="Total Collected" value={loading ? '—' : fmtAmount(stats?.totalCollected || 0)} sub="Completed payments" color="#1f8a3e" loading={loading} trend={6} />
-        <SummaryCard icon={<CreditCard size={18} />} label="Pending Amount" value={loading ? '—' : fmtAmount(stats?.totalPending || 0)} sub="Awaiting payment" color="#d97706" loading={loading} />
-        <SummaryCard icon={<CreditCard size={18} />} label="Mobile Money" value={loading ? '—' : `${mobileMoneyPct}%`} sub="Of all payments" color="#f59e0b" loading={loading} />
-        <SummaryCard icon={<CreditCard size={18} />} label="Success Rate" value={loading ? '—' : `${successRate}%`} sub="Completed / total" color="#2563eb" loading={loading} trend={successRate >= 80 ? 2 : -3} />
+        <SummaryCard icon={<CreditCard size={18} />} label={<Tooltip text="The total money received from completed payments"><span>Total Collected</span></Tooltip>} value={loading ? '—' : fmtAmount(stats?.totalCollected || 0)} sub="Completed payments" color="#1f8a3e" loading={loading} trend={6} />
+        <SummaryCard icon={<CreditCard size={18} />} label={<Tooltip text="Money owed but not yet received"><span>Pending Amount</span></Tooltip>} value={loading ? '—' : fmtAmount(stats?.totalPending || 0)} sub="Awaiting payment" color="#d97706" loading={loading} />
+        <SummaryCard icon={<CreditCard size={18} />} label={<Tooltip text="The share of all payments made through mobile money services like MTN MoMo or Airtel Money"><span>Mobile Money</span></Tooltip>} value={loading ? '—' : `${mobileMoneyPct}%`} sub="Of all payments" color="#f59e0b" loading={loading} />
+        <SummaryCard icon={<CreditCard size={18} />} label={<Tooltip text="Out of all payments attempted, how many went through successfully"><span>Success Rate</span></Tooltip>} value={loading ? '—' : `${successRate}%`} sub="Completed / total" color="#2563eb" loading={loading} trend={successRate >= 80 ? 2 : -3} />
       </div>
 
       {error && (
@@ -206,8 +207,19 @@ export default function PaymentsView({ currency = 'UGX', isMobile = false }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #f3f4f6' }}>
-                  {['Payment ID', 'Date', 'Amount', 'Method', 'Provider', 'Status', 'Paid By', 'Reference'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{h}</th>
+                  {[
+                    { h: 'Payment ID', tip: 'A unique reference number for this payment' },
+                    { h: 'Date',       tip: 'When this payment was made' },
+                    { h: 'Amount',     tip: 'How much money was paid' },
+                    { h: 'Method',     tip: 'How the payment was made — mobile money, bank transfer, cash, or cheque' },
+                    { h: 'Provider',   tip: 'The specific service used, like MTN MoMo or Stanbic Bank' },
+                    { h: 'Status',     tip: 'Whether the payment went through, is still waiting, or had a problem' },
+                    { h: 'Paid By',    tip: 'Who made the payment' },
+                    { h: 'Reference',  tip: 'A code you can use to trace this payment in your bank or mobile money records' },
+                  ].map(({ h, tip }) => (
+                    <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>
+                      <Tooltip text={tip}><span>{h}</span></Tooltip>
+                    </th>
                   ))}
                 </tr>
               </thead>

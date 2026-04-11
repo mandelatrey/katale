@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Truck, Package, ArrowUpRight, ArrowDownRight } from './Icons';
+import Tooltip from './Tooltip';
 
 const API_URL = '/api';
 const UGX_TO_USD = 3700;
@@ -205,7 +206,7 @@ export default function AssetsView({ currency = 'UGX', isMobile = false }) {
       <div className="dash-cards">
         <SummaryCard
           icon={<Package size={18} />}
-          label="Total Assets"
+          label={<Tooltip text="The total number of vehicles, warehouses, and equipment you've added"><span>Total Assets</span></Tooltip>}
           value={loading ? '—' : assets.length}
           sub="Across all types"
           color="#1f8a3e"
@@ -213,7 +214,7 @@ export default function AssetsView({ currency = 'UGX', isMobile = false }) {
         />
         <SummaryCard
           icon={<Truck size={18} />}
-          label="Vehicles"
+          label={<Tooltip text="How many vehicles are registered in your fleet"><span>Vehicles</span></Tooltip>}
           value={loading ? '—' : vehicles}
           sub="Trucks, vans & lorries"
           color="#2563eb"
@@ -221,7 +222,7 @@ export default function AssetsView({ currency = 'UGX', isMobile = false }) {
         />
         <SummaryCard
           icon={<Package size={18} />}
-          label="Warehouses"
+          label={<Tooltip text="Storage locations and processing equipment in your supply chain"><span>Warehouses</span></Tooltip>}
           value={loading ? '—' : warehouses}
           sub={`+ ${equipment} equipment`}
           color="#7c3aed"
@@ -229,7 +230,7 @@ export default function AssetsView({ currency = 'UGX', isMobile = false }) {
         />
         <SummaryCard
           icon={<Package size={18} />}
-          label="Total Value"
+          label={<Tooltip text="The combined estimated worth of all your assets"><span>Total Value</span></Tooltip>}
           value={loading ? '—' : `${currency === 'USD' ? '$' : 'UGX'} ${fmtValue(totalValue)}`}
           sub="Combined asset value"
           color="#d97706"
@@ -313,8 +314,18 @@ export default function AssetsView({ currency = 'UGX', isMobile = false }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #f3f4f6' }}>
-                  {['Asset Name', 'Type', 'Status', 'Location', 'Assigned To', 'Capacity', 'Value'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{h}</th>
+                  {[
+                    { h: 'Asset Name',   tip: 'The name of the vehicle, warehouse, or piece of equipment' },
+                    { h: 'Type',         tip: 'What kind of asset this is — vehicle, warehouse, or equipment' },
+                    { h: 'Status',       tip: 'Whether this asset is in use, being repaired, sitting idle, or retired' },
+                    { h: 'Location',     tip: 'Which market this asset is based at' },
+                    { h: 'Assigned To',  tip: 'The person responsible for this asset' },
+                    { h: 'Capacity',     tip: 'How much this asset can carry or store' },
+                    { h: 'Value',        tip: 'What this asset is worth' },
+                  ].map(({ h, tip }) => (
+                    <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>
+                      <Tooltip text={tip}><span>{h}</span></Tooltip>
+                    </th>
                   ))}
                 </tr>
               </thead>

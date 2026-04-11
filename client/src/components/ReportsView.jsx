@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, ArrowUpRight } from './Icons';
+import Tooltip from './Tooltip';
 
 const API_URL = '/api';
 
@@ -43,12 +44,21 @@ const TYPE_META = {
   regional_summary:  { label: 'Regional Summary',  color: '#d97706', bg: '#fef3c7' },
 };
 
+const TYPE_TIPS = {
+  price_trend:      'Shows how the price of a commodity has changed over time',
+  trade_volume:     'Shows how much of a commodity was bought and sold in a period',
+  market_activity:  'A summary of what happened at a specific market',
+  regional_summary: 'An overview of trade across an entire region',
+};
+
 function TypeBadge({ type }) {
   const m = TYPE_META[type] || { label: type, color: '#6b7280', bg: '#f3f4f6' };
   return (
-    <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', color: m.color, backgroundColor: m.bg, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)', whiteSpace: 'nowrap' }}>
-      {m.label}
-    </span>
+    <Tooltip text={TYPE_TIPS[type] || m.label}>
+      <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', color: m.color, backgroundColor: m.bg, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)', whiteSpace: 'nowrap' }}>
+        {m.label}
+      </span>
+    </Tooltip>
   );
 }
 
@@ -76,12 +86,12 @@ function ReportCard({ report, loading }) {
       <div style={{ display: 'flex', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
         {report.period && (
           <span style={{ fontSize: 'var(--text-xs)', color: '#6b7280' }}>
-            <span style={{ fontWeight: 'var(--weight-semibold)' }}>Period:</span> {report.period}
+            <Tooltip text="The time window this report covers"><span style={{ fontWeight: 'var(--weight-semibold)' }}>Period:</span></Tooltip>{' '}{report.period}
           </span>
         )}
         {report.region && report.region !== 'All' && (
           <span style={{ fontSize: 'var(--text-xs)', color: '#6b7280' }}>
-            <span style={{ fontWeight: 'var(--weight-semibold)' }}>Region:</span> {report.region}
+            <Tooltip text="Which part of Uganda this report covers"><span style={{ fontWeight: 'var(--weight-semibold)' }}>Region:</span></Tooltip>{' '}{report.region}
           </span>
         )}
         {report.commodity && (
@@ -144,10 +154,10 @@ export default function ReportsView({ currency = 'UGX', isMobile = false }) {
       </div>
 
       <div className="dash-cards">
-        <SummaryCard icon={<FileText size={18} />} label="Total Reports" value={loading ? '—' : reports.length} sub="All time" color="#1f8a3e" loading={loading} />
-        <SummaryCard icon={<FileText size={18} />} label="Price Trends" value={loading ? '—' : countByType('price_trend')} sub="Commodity price analysis" color="#2563eb" loading={loading} />
-        <SummaryCard icon={<FileText size={18} />} label="Trade Volume" value={loading ? '—' : countByType('trade_volume')} sub="Volume & value reports" color="#7c3aed" loading={loading} />
-        <SummaryCard icon={<FileText size={18} />} label="Regional" value={loading ? '—' : countByType('regional_summary') + countByType('market_activity')} sub="Activity & summaries" color="#d97706" loading={loading} />
+        <SummaryCard icon={<FileText size={18} />} label={<Tooltip text="The total number of reports generated across all categories"><span>Total Reports</span></Tooltip>} value={loading ? '—' : reports.length} sub="All time" color="#1f8a3e" loading={loading} />
+        <SummaryCard icon={<FileText size={18} />} label={<Tooltip text="Reports showing how the price of a commodity has changed over time"><span>Price Trends</span></Tooltip>} value={loading ? '—' : countByType('price_trend')} sub="Commodity price analysis" color="#2563eb" loading={loading} />
+        <SummaryCard icon={<FileText size={18} />} label={<Tooltip text="Reports showing how much of a commodity was bought and sold in a period"><span>Trade Volume</span></Tooltip>} value={loading ? '—' : countByType('trade_volume')} sub="Volume & value reports" color="#7c3aed" loading={loading} />
+        <SummaryCard icon={<FileText size={18} />} label={<Tooltip text="Reports covering activity at specific markets or across an entire region"><span>Regional</span></Tooltip>} value={loading ? '—' : countByType('regional_summary') + countByType('market_activity')} sub="Activity & summaries" color="#d97706" loading={loading} />
       </div>
 
       {error && (

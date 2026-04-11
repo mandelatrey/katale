@@ -282,16 +282,14 @@ function timeAgo(dateStr) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function stableNumber(seed = '') {
-  return String(seed)
-    .split('')
-    .reduce((acc, ch) => ((acc * 31) + ch.charCodeAt(0)) % 1000003, 17);
-}
-
 // ─── Dashboard Main ──────────────────────────────────────────────────────────
 export default function Dashboard({ markets = [], currency = 'UGX', isMobile = false, initialSection = 'overview' }) {
   const [latestPrices, setLatestPrices] = useState([]);
   const [loadingPrices, setLoadingPrices] = useState(true);
+  const [carriers, setCarriers] = useState([]);
+  const [loadingCarriers, setLoadingCarriers] = useState(true);
+  const [assetCount, setAssetCount] = useState(null);
+  const [pendingPaymentCount, setPendingPaymentCount] = useState(null);
   const [selectedChart, setSelectedChart] = useState(['maize', 'beans', 'coffee']);
   const [selectedCarrierId, setSelectedCarrierId] = useState(null);
   const [activeSection, setActiveSection] = useState(initialSection === 'carriers' ? 'carriers' : 'overview');
@@ -308,21 +306,42 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
       .catch(() => { setLoadingPrices(false); });
   }, []);
 
+  // Fetch real carriers
+  useEffect(() => {
+    setLoadingCarriers(true);
+    fetch(`${API_URL}/carriers`)
+      .then(r => r.json())
+      .then(data => {
+        setCarriers(Array.isArray(data) ? data : []);
+        setLoadingCarriers(false);
+      })
+      .catch(() => { setLoadingCarriers(false); });
+  }, []);
+
+  // Fetch asset count and pending payment count
+  useEffect(() => {
+    fetch(`${API_URL}/assets?status=active`)
+      .then(r => r.json())
+      .then(data => setAssetCount(Array.isArray(data) ? data.length : 0))
+      .catch(() => setAssetCount(0));
+
+    fetch(`${API_URL}/payments?status=pending&limit=500`)
+      .then(r => r.json())
+      .then(data => setPendingPaymentCount(Array.isArray(data) ? data.length : 0))
+      .catch(() => setPendingPaymentCount(0));
+  }, []);
+
   // ── Derived stats from real data ──────────────────────────────────────────
   const stats = useMemo(() => {
-    const activeMarkets = markets.length;
-    // Count markets that have a price record (proxy for "active" data)
-    const marketsWithPrices = new Set(latestPrices.map(p => String(p.market?._id || p.market)));
-    const assetsInTransit = marketsWithPrices.size; // markets actively reporting
-    // Pending = markets listed but not reporting
-    const pendingPayments = Math.max(0, activeMarkets - assetsInTransit);
-
-    // Price change % — compare latest maize price to an earlier estimate
     const maizePrices = latestPrices.filter(p => p.commodity === 'maize').map(p => p.price);
     const avgMaize = maizePrices.length ? Math.round(maizePrices.reduce((a, b) => a + b, 0) / maizePrices.length) : null;
-
-    return { activeMarkets, assetsInTransit, pendingPayments, avgMaize };
-  }, [markets, latestPrices]);
+    return {
+      activeCarriers: carriers.length,
+      assetsActive: assetCount,
+      pendingPayments: pendingPaymentCount,
+      avgMaize,
+    };
+  }, [carriers, assetCount, pendingPaymentCount, latestPrices]);
 
   // ── Recent activity — build from latest prices ────────────────────────────
   const recentActivity = useMemo(() => {
@@ -348,51 +367,42 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
     );
   };
 
+  const STATUS_LABEL = {
+    'ON THE WAY': 'On Route',
+    'LOADING': 'Loading',
+    'UNLOADING': 'Unloading',
+    'WAITING': 'Waiting',
+  };
+
   const carrierRows = useMemo(() => {
-    const grouped = latestPrices.reduce((acc, p) => {
-      const marketId = String(p.market?._id || p.market || p.marketInfo?._id || '');
-      if (!marketId) return acc;
-      if (!acc[marketId]) acc[marketId] = [];
-      acc[marketId].push(p);
-      return acc;
-    }, {});
-
-    return markets.map((m) => {
-      const id = String(m._id);
-      const marketPrices = (grouped[id] || []).sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt));
-      const recent = marketPrices[0];
-      const seeded = stableNumber(id + m.name);
-      const tripId = `UG-${String(seeded).slice(-4)}`;
-      const routeDistanceKm = ((seeded % 86) + 14) / 10;
-      const etaMinutes = (seeded % 130) + 15;
-
-      let status = 'Waiting';
-      if (recent?.recordedAt) {
-        const ageMins = Math.floor((Date.now() - new Date(recent.recordedAt).getTime()) / 60000);
-        if (ageMins <= 240) status = 'On Route';
-        else if (ageMins <= 1440) status = 'Unloading';
-      }
+    return carriers.map((c) => {
+      const id = String(c._id);
+      const route = c.activeRoute || {};
+      const distKm = parseFloat(route.distKm) || 0;
+      const status = STATUS_LABEL[c.status] || c.status || 'Waiting';
+      const tripId = c.specs?.plate ? `UG-${c.specs.plate}` : `UG-${id.slice(-4).toUpperCase()}`;
+      const etaMinutes = distKm > 0 ? Math.round((distKm / 60) * 60) : null;
 
       return {
         id,
-        name: `${m.district || m.name} Carrier`,
-        market: m.name,
-        district: m.district || 'District N/A',
-        region: m.region || 'Region N/A',
+        name: c.name,
+        market: route.from || c.vehicleModel || '—',
+        district: route.to || '—',
+        region: c.vehicleType || c.category || '—',
         status,
         tripId,
-        routeDistanceKm,
+        routeDistanceKm: distKm,
         etaMinutes,
-        loadCount: marketPrices.length,
-        lastUpdated: recent?.recordedAt || null,
-        updates: marketPrices.slice(0, 4),
+        loadCount: parseInt(route.packages) || (c.historyRoutes?.length || 0),
+        lastUpdated: null,
+        updates: (c.historyRoutes || []).slice(0, 4),
+        phone: c.phone,
       };
     }).sort((a, b) => {
-      const statusOrder = { 'On Route': 0, 'Unloading': 1, 'Waiting': 2 };
-      if (statusOrder[a.status] !== statusOrder[b.status]) return statusOrder[a.status] - statusOrder[b.status];
-      return (b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0) - (a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0);
+      const statusOrder = { 'On Route': 0, 'Loading': 1, 'Unloading': 2, 'Waiting': 3 };
+      return (statusOrder[a.status] ?? 4) - (statusOrder[b.status] ?? 4);
     });
-  }, [markets, latestPrices]);
+  }, [carriers]);
 
   useEffect(() => {
     if (!carrierRows.length) {
@@ -409,7 +419,7 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
     return carrierRows.reduce((acc, c) => {
       acc[c.status] = (acc[c.status] || 0) + 1;
       return acc;
-    }, { 'On Route': 0, 'Unloading': 0, 'Waiting': 0 });
+    }, { 'On Route': 0, 'Loading': 0, 'Unloading': 0, 'Waiting': 0 });
   }, [carrierRows]);
 
   useEffect(() => {
@@ -489,29 +499,29 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
         <SummaryCard
           icon={<Users size={20} />}
           label="Active Carriers"
-          value={loadingPrices ? '—' : stats.activeMarkets.toString()}
-          sub="Registered market nodes"
-          trend={4}
+          value={loadingCarriers ? '—' : stats.activeCarriers.toString()}
+          sub="Registered drivers & vehicles"
+          trend={null}
           color="#1f8a3e"
-          loading={loadingPrices}
+          loading={loadingCarriers}
         />
         <SummaryCard
           icon={<Truck size={20} />}
-          label="Assets in Transit"
-          value={loadingPrices ? '—' : stats.assetsInTransit.toString()}
-          sub="Markets actively reporting"
-          trend={-2}
+          label="Active Assets"
+          value={assetCount === null ? '—' : stats.assetsActive.toString()}
+          sub="Fleet assets in active status"
+          trend={null}
           color="#d97706"
-          loading={loadingPrices}
+          loading={assetCount === null}
         />
         <SummaryCard
           icon={<CreditCard size={20} />}
           label="Pending Payments"
-          value={loadingPrices ? '—' : stats.pendingPayments.toString()}
-          sub="No recent price data"
+          value={pendingPaymentCount === null ? '—' : stats.pendingPayments.toString()}
+          sub="Awaiting settlement"
           trend={null}
           color="#6366f1"
-          loading={loadingPrices}
+          loading={pendingPaymentCount === null}
         />
         <SummaryCard
           icon={<BarChart2 size={20} />}
@@ -677,7 +687,7 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
           </span>
         </div>
 
-        {loadingPrices ? (
+        {loadingCarriers ? (
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.1fr 2fr', gap: 12 }}>
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="dash-skeleton" style={{ height: 62, borderRadius: 10 }} />
@@ -692,7 +702,7 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
             <div className="carrier-ops-list">
               {carrierRows.slice(0, isMobile ? 6 : 9).map((carrier) => {
                 const selected = carrier.id === selectedCarrier?.id;
-                const tone = carrier.status === 'On Route' ? '#1f8a3e' : carrier.status === 'Unloading' ? '#d97706' : '#6b7280';
+                const tone = carrier.status === 'On Route' ? '#1f8a3e' : carrier.status === 'Loading' ? '#3b82f6' : carrier.status === 'Unloading' ? '#d97706' : '#6b7280';
                 return (
                   <button
                     key={carrier.id}
@@ -745,14 +755,14 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
                     <MapPin size={14} color="#1f8a3e" />
                     <div>
                       <div className="carrier-ops-metric-label">Route distance</div>
-                      <div className="carrier-ops-metric-value">{selectedCarrier.routeDistanceKm.toFixed(1)} km</div>
+                      <div className="carrier-ops-metric-value">{selectedCarrier.routeDistanceKm > 0 ? `${selectedCarrier.routeDistanceKm.toFixed(1)} km` : '—'}</div>
                     </div>
                   </div>
                   <div className="carrier-ops-metric-card">
                     <Clock size={14} color="#d97706" />
                     <div>
                       <div className="carrier-ops-metric-label">Estimated time</div>
-                      <div className="carrier-ops-metric-value">{selectedCarrier.etaMinutes} min</div>
+                      <div className="carrier-ops-metric-value">{selectedCarrier.etaMinutes != null ? `${selectedCarrier.etaMinutes} min` : '—'}</div>
                     </div>
                   </div>
                   <div className="carrier-ops-metric-card">
@@ -767,34 +777,27 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
                 <div className="carrier-ops-bottom">
                   <div style={{ border: '1px solid #f1f3f5', borderRadius: 10, padding: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                      <span style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>Latest Lane Activity</span>
+                      <span style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>Route History</span>
                       <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)', fontFamily: 'var(--font-mono)' }}>
-                        {selectedCarrier.updates.length} entries
+                        {selectedCarrier.updates.length} routes
                       </span>
                     </div>
                     {selectedCarrier.updates.length === 0 ? (
-                      <div style={{ fontSize: 11, color: '#9ca3af', padding: '12px 0' }}>No linked price updates for this lane.</div>
+                      <div style={{ fontSize: 11, color: '#9ca3af', padding: '12px 0' }}>No route history for this carrier.</div>
                     ) : (
-                      selectedCarrier.updates.map((update, i) => {
-                        const commodity = commodities.find(c => c.key === update.commodity);
-                        const displayPrice = currency === 'USD'
-                          ? `$${(update.price / 3700).toFixed(2)}`
-                          : `UGX ${Math.round(update.price).toLocaleString()}`;
-                        return (
-                          <div key={update._id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: i === 0 ? 'none' : '1px solid #f8fafc' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                              <span style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: '#f3f4f6', display: 'grid', placeItems: 'center', color: '#6b7280', flexShrink: 0 }}>
-                                {commodity?.icon || <Package size={12} />}
-                              </span>
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-800)', textTransform: 'capitalize' }}>{(update.commodity || '').replace(/_/g, ' ')}</div>
-                                <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)' }}>{timeAgo(update.recordedAt)}</div>
-                              </div>
+                      selectedCarrier.updates.map((route, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: i === 0 ? 'none' : '1px solid #f8fafc' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                            <span style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: '#f3f4f6', display: 'grid', placeItems: 'center', color: '#6b7280', flexShrink: 0 }}>
+                              <MapPin size={12} />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-800)' }}>{route.from || '—'} → {route.to || '—'}</div>
+                              <div style={{ fontSize: 'var(--text-2xs)', color: 'var(--gray-400)' }}>{route.packages ? `${route.packages} pkg` : ''}{route.distKm ? ` · ${route.distKm} km` : ''}</div>
                             </div>
-                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--gray-900)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', fontWeight: 'var(--weight-medium)' }}>{displayPrice}</div>
                           </div>
-                        );
-                      })
+                        </div>
+                      ))
                     )}
                   </div>
 
@@ -803,10 +806,10 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
                       <span style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--weight-semibold)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)' }}>Fleet Snapshot</span>
                       <ChevronRight size={13} color="#9ca3af" />
                     </div>
-                    {['On Route', 'Unloading', 'Waiting'].map((key) => {
+                    {['On Route', 'Loading', 'Unloading', 'Waiting'].map((key) => {
                       const count = carrierStatusBreakdown[key] || 0;
                       const pct = carrierRows.length ? Math.round((count / carrierRows.length) * 100) : 0;
-                      const col = key === 'On Route' ? '#1f8a3e' : key === 'Unloading' ? '#d97706' : '#9ca3af';
+                      const col = key === 'On Route' ? '#1f8a3e' : key === 'Loading' ? '#3b82f6' : key === 'Unloading' ? '#d97706' : '#9ca3af';
                       return (
                         <div key={key} style={{ marginBottom: 10 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>

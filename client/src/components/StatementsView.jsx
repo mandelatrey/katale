@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, ArrowUpRight, ArrowDownRight, ChevronRight } from './Icons';
+import Tooltip from './Tooltip';
 
 const API_URL = '/api';
 const UGX_TO_USD = 3700;
@@ -73,7 +74,9 @@ function StatementRow({ statement, currency, expanded, onToggle }) {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-base)', color: 'var(--gray-900)' }}>
-            {statement.period}
+            <Tooltip text="Click to expand and see every individual transaction for this month">
+              <span>{statement.period}</span>
+            </Tooltip>
           </div>
           <div style={{ fontSize: 'var(--text-xs)', color: '#6b7280', marginTop: 2 }}>
             {statement.entries?.length || 0} entries
@@ -89,13 +92,17 @@ function StatementRow({ statement, currency, expanded, onToggle }) {
         </div>
         <div style={{ display: 'flex', gap: 16, minWidth: 200, justifyContent: 'flex-end' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 'var(--text-2xs)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Income</div>
+            <Tooltip text="Money coming in — sales, fees, and other revenue">
+              <div style={{ fontSize: 'var(--text-2xs)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Income</div>
+            </Tooltip>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: '#1f8a3e', fontWeight: 'var(--weight-semibold)' }}>
               {fmtAmount(statement.totalIncome)}
             </div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 'var(--text-2xs)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Expenses</div>
+            <Tooltip text="Money going out — transport costs, salaries, and other expenses">
+              <div style={{ fontSize: 'var(--text-2xs)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Expenses</div>
+            </Tooltip>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: '#dc2626', fontWeight: 'var(--weight-semibold)' }}>
               {fmtAmount(statement.totalExpenses)}
             </div>
@@ -109,8 +116,17 @@ function StatementRow({ statement, currency, expanded, onToggle }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
             <thead>
               <tr style={{ backgroundColor: '#f9fafb' }}>
-                {['Date', 'Description', 'Type', 'Amount', 'Balance', 'Reference'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '8px 16px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{h}</th>
+                {[
+                  { h: 'Date',        tip: 'When this transaction happened' },
+                  { h: 'Description', tip: 'A short note explaining what this entry is for' },
+                  { h: 'Type',        tip: 'Whether money came in (income) or went out (expense)' },
+                  { h: 'Amount',      tip: 'How much money was involved' },
+                  { h: 'Balance',     tip: 'Your running account balance after this entry' },
+                  { h: 'Reference',   tip: 'A code to trace this entry back to the original payment or record' },
+                ].map(({ h, tip }) => (
+                  <th key={h} style={{ textAlign: 'left', padding: '8px 16px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>
+                    <Tooltip text={tip}><span>{h}</span></Tooltip>
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -210,10 +226,10 @@ export default function StatementsView({ currency = 'UGX', isMobile = false }) {
       </div>
 
       <div className="dash-cards">
-        <SummaryCard icon={<FileText size={18} />} label="Current Balance" value={loading ? '—' : fmtAmount(latest?.closingBalance || 0)} sub={latest?.period || 'Latest period'} color="#1f8a3e" loading={loading} />
-        <SummaryCard icon={<ArrowUpRight size={18} />} label="Income This Month" value={loading ? '—' : fmtAmount(totalIncomeCurrent)} sub="Revenue collected" color="#2563eb" loading={loading} trend={8} />
-        <SummaryCard icon={<ArrowDownRight size={18} />} label="Expenses This Month" value={loading ? '—' : fmtAmount(totalExpensesCurrent)} sub="Costs incurred" color="#dc2626" loading={loading} />
-        <SummaryCard icon={<FileText size={18} />} label="Statement Periods" value={loading ? '—' : statements.length} sub="Monthly records" color="#7c3aed" loading={loading} />
+        <SummaryCard icon={<FileText size={18} />} label={<Tooltip text="Your account balance at the end of the most recent period"><span>Current Balance</span></Tooltip>} value={loading ? '—' : fmtAmount(latest?.closingBalance || 0)} sub={latest?.period || 'Latest period'} color="#1f8a3e" loading={loading} />
+        <SummaryCard icon={<ArrowUpRight size={18} />} label={<Tooltip text="Total money received this month — from sales, fees, and other income"><span>Income This Month</span></Tooltip>} value={loading ? '—' : fmtAmount(totalIncomeCurrent)} sub="Revenue collected" color="#2563eb" loading={loading} trend={8} />
+        <SummaryCard icon={<ArrowDownRight size={18} />} label={<Tooltip text="Total money spent this month — on transport, salaries, and other costs"><span>Expenses This Month</span></Tooltip>} value={loading ? '—' : fmtAmount(totalExpensesCurrent)} sub="Costs incurred" color="#dc2626" loading={loading} />
+        <SummaryCard icon={<FileText size={18} />} label={<Tooltip text="How many monthly account summaries have been recorded"><span>Statement Periods</span></Tooltip>} value={loading ? '—' : statements.length} sub="Monthly records" color="#7c3aed" loading={loading} />
       </div>
 
       {error && (

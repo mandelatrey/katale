@@ -71,7 +71,7 @@ export default function Popup({ map, market, prices, onClose, allMarkets, isMobi
   ];
 
   const s = {
-    card: { backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', padding: 20, boxShadow: '0 8px 30px rgba(0,0,0,.12)', border: '1px solid #f0f0f0', width: 336, height: 480, display: 'flex', flexDirection: 'column', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'hidden' },
+    card: { backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', padding: 20, boxShadow: '0 8px 30px rgba(0,0,0,.12)', border: '1px solid #f0f0f0', width: 336, height: 480, display: 'flex', flexDirection: 'column', fontFamily: 'inherit', overflow: 'hidden' },
     header: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, flexShrink: 0 },
     icon: { width: 28, height: 28, borderRadius: 'var(--radius-md)', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
     title: { fontSize: 14, fontWeight: 700, color: '#111827', marginLeft: 8 },

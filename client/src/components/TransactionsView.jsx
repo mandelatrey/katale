@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, Package, ArrowUpRight, ArrowDownRight, Plus, X } from './Icons';
 import { commodities } from '../constants';
+import Tooltip from './Tooltip';
 
 const API_URL = '/api';
 const UGX_TO_USD = 3700;
@@ -401,15 +402,16 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
           onClick={() => setShowModal(true)}
           style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1a6b30', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
         >
-          <Plus size={15} /> New Transaction
+          <Plus size={15} />
+          <Tooltip text="Record a new trade — buying or selling a commodity between markets"><span>New Transaction</span></Tooltip>
         </button>
       </div>
 
       <div className="dash-cards">
-        <SummaryCard icon={<CreditCard size={18} />} label="Total Transactions" value={loading ? '—' : (stats?.total || 0)} sub="All time" color="#1f8a3e" loading={loading} trend={8} />
-        <SummaryCard icon={<Package size={18} />} label="Total Volume" value={loading ? '—' : `${(totalVolume / 1000).toFixed(0)}T`} sub="Metric tons traded" color="#2563eb" loading={loading} trend={5} />
-        <SummaryCard icon={<CreditCard size={18} />} label="Total Value" value={loading ? '—' : fmtAmount(totalValue)} sub={`In ${currency}`} color="#7c3aed" loading={loading} trend={12} />
-        <SummaryCard icon={<Package size={18} />} label="Pending" value={loading ? '—' : (stats?.pending || 0)} sub="Awaiting confirmation" color="#d97706" loading={loading} />
+        <SummaryCard icon={<CreditCard size={18} />} label={<Tooltip text="The total number of trades recorded across all markets"><span>Total Transactions</span></Tooltip>} value={loading ? '—' : (stats?.total || 0)} sub="All time" color="#1f8a3e" loading={loading} trend={8} />
+        <SummaryCard icon={<Package size={18} />} label={<Tooltip text="The total weight of all goods traded, measured in metric tons"><span>Total Volume</span></Tooltip>} value={loading ? '—' : `${(totalVolume / 1000).toFixed(0)}T`} sub="Metric tons traded" color="#2563eb" loading={loading} trend={5} />
+        <SummaryCard icon={<CreditCard size={18} />} label={<Tooltip text="The total money value of all trades combined"><span>Total Value</span></Tooltip>} value={loading ? '—' : fmtAmount(totalValue)} sub={`In ${currency}`} color="#7c3aed" loading={loading} trend={12} />
+        <SummaryCard icon={<Package size={18} />} label={<Tooltip text="Trades that have been agreed but not yet completed or delivered"><span>Pending</span></Tooltip>} value={loading ? '—' : (stats?.pending || 0)} sub="Awaiting confirmation" color="#d97706" loading={loading} />
       </div>
 
       {error && (
@@ -481,8 +483,21 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
             <thead>
               <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #f3f4f6' }}>
-                {['ID', 'Date', 'Type', 'Commodity', 'Qty (kg)', 'Unit Price', 'Total', 'Route', 'Carrier', 'Status'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{h}</th>
+                {[
+                  { h: 'ID',         tip: 'A unique reference number for this trade' },
+                  { h: 'Date',       tip: 'When this trade took place' },
+                  { h: 'Type',       tip: 'Whether you bought or sold the commodity' },
+                  { h: 'Commodity',  tip: 'The crop or product being traded' },
+                  { h: 'Qty (kg)',   tip: 'How many kilograms were traded' },
+                  { h: 'Unit Price', tip: 'The price per kilogram at the time of the trade' },
+                  { h: 'Total',      tip: 'The total money value of this trade' },
+                  { h: 'Route',      tip: 'Where the goods came from and where they went' },
+                  { h: 'Carrier',    tip: 'The driver or vehicle that transported the goods' },
+                  { h: 'Status',     tip: 'Where this trade is in the process — agreed, on the road, or delivered' },
+                ].map(({ h, tip }) => (
+                  <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>
+                    <Tooltip text={tip}><span>{h}</span></Tooltip>
+                  </th>
                 ))}
               </tr>
             </thead>

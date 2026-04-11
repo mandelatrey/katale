@@ -117,7 +117,7 @@ function getMarkerStyle(price, priceRange, isSelected) {
     <rect x="0.5" y="0.5" width="${totalWidth - 1}" height="24" rx="12" fill="${bg}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>
     <circle cx="12" cy="12.5" r="${dotSize + 2}" fill="rgba(255,255,255,0.2)"/>
     <circle cx="12" cy="12.5" r="${dotSize}" fill="${dotColor}"/>
-    <text x="24" y="16.5" font-family="-apple-system, system-ui, sans-serif" font-size="11" font-weight="700" fill="white">${priceText}</text>
+    <text x="24" y="16.5" font-family="'IBM Plex Sans', -apple-system, sans-serif" font-size="11" font-weight="700" fill="white">${priceText}</text>
     <path d="M ${totalWidth/2 - 5} 24.5 L ${totalWidth/2} 30 L ${totalWidth/2 + 5} 24.5" fill="${bg}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linejoin="round"/>
   </svg>`;
 
@@ -156,6 +156,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('commodities'); // bottom tab active item
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const unreadMessages = 2; // badge count — replace with real data when available
+  const [showAllCommodities, setShowAllCommodities] = useState(false);
   
   const isMobile = useIsMobile();
 
@@ -422,7 +423,7 @@ function App() {
                 <div
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 12, cursor: 'pointer', userSelect: 'none' }}
                 >
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>Prices for: <span style={{ color: '#374151', fontWeight: 500 }}>{selectedRegion === 'All' ? 'All Regions' : selectedRegion}</span></span>
+                  <span style={{ fontSize: 12, color: '#6b7280' }}>Region: <span style={{ color: '#374151', fontWeight: 500 }}>{selectedRegion === 'All' ? 'All regions' : selectedRegion}</span></span>
                   <ChevronDown style={{ width: 14, height: 14, color: '#9ca3af' }} />
                 </div>
               </DropdownMenuTrigger>
@@ -430,7 +431,7 @@ function App() {
                 align="start"
                 style={{ width: 200, zIndex: 1100, backgroundColor: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', boxShadow: '0 4px 16px rgba(0,0,0,.10)', padding: '6px', fontFamily: 'inherit' }}
               >
-                <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Filter by Region</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Region</div>
                 <DropdownMenuRadioGroup value={selectedRegion} onValueChange={setSelectedRegion}>
                   {regions.map(r => (
                     <DropdownMenuRadioItem
@@ -452,7 +453,7 @@ function App() {
             <div style={{ position: 'relative', flex: 1 }}>
               <input
                 type="text"
-                placeholder="Search markets or commodities…"
+                placeholder="Search by market or district…"
                 value={desktopSearch}
                 onChange={e => setDesktopSearch(e.target.value)}
                 style={{ width: '100%', paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8, backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
@@ -484,16 +485,16 @@ function App() {
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>Track stops</span>
-            <span style={{ backgroundColor: '#fef9c3', color: '#92400e', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>{filteredMarkets.length}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>Markets tracked</span>
+            <span style={{ backgroundColor: '#e6f2ea', color: '#1a6b30', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>{filteredMarkets.length}</span>
           </div>
 
-          {/* Commodity pills - only show in map view */}
+          {/* Commodity pills - only show in map view, collapsed to 5 by default */}
           {location.pathname === ROUTES.MAP && (
             <div style={{ marginBottom: 20 }}>
-              <h3 style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Select Commodity</h3>
+              <h3 style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Commodity</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {commodities.map(c => (
+                {(showAllCommodities ? commodities : commodities.slice(0, 5)).map(c => (
                   <button
                     key={c.key}
                     style={{
@@ -511,47 +512,36 @@ function App() {
                     {c.label}
                   </button>
                 ))}
+                <button
+                  onClick={() => setShowAllCommodities(v => !v)}
+                  style={{
+                    padding: '4px 10px', borderRadius: 6,
+                    border: '1px solid #e5e7eb',
+                    backgroundColor: '#f9fafb',
+                    color: '#6b7280',
+                    fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {showAllCommodities ? 'Show less' : `+${commodities.length - 5} more`}
+                </button>
               </div>
             </div>
           )}
 
-          {/* Region filter */}
-          <div style={{ marginBottom: 20 }}>
-            <h3 style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Filter by Region</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {regions.map(r => (
-                <button
-                  key={r}
-                  style={{
-                    padding: '4px 10px', borderRadius: 6,
-                    border: selectedRegion === r ? '1px solid rgba(26, 107, 48, 0.3)' : '1px solid #e5e7eb',
-                    backgroundColor: selectedRegion === r ? '#e6f2ea' : '#fff',
-                    color: selectedRegion === r ? '#0d3b1a' : '#4b5563',
-                    fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onClick={() => setSelectedRegion(r)}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Location */}
-          <div style={{ position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 10, margin: '0 -20px 20px -20px', padding: '12px 20px 12px 20px', borderBottom: '1px solid currentColor', borderBottomColor: 'rgba(0,0,0,0.05)' }}>
-            <h3 style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Your Location</h3>
+          <div style={{ marginBottom: 20 }}>
             <button
               style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1f8a3e', color: '#fff', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: 'none', fontFamily: 'inherit', transition: 'background 0.15s ease' }}
               onMouseEnter={e => e.currentTarget.style.backgroundColor = '#1a6b30'}
               onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1f8a3e'}
               onClick={handleFindNearest}
             >
-              <MapPin size={16} /> Find nearest markets
+              <MapPin size={16} /> Show markets near me
             </button>
             {nearestMarkets.length > 0 && (
               <p style={{ fontSize: 10, color: '#6b7280', textAlign: 'center', marginTop: 8, marginBottom: 0, fontFamily: 'var(--font-mono)' }}>
-                Found {nearestMarkets.length} markets within 50 km
+                {nearestMarkets.length} markets within 50 km of your location
               </p>
             )}
           </div>
@@ -577,7 +567,7 @@ function App() {
 
           {filteredMarkets.length > 0 && (
             <div style={{ textAlign: 'center', marginTop: 16, marginBottom: 8, flexShrink: 0 }}>
-              <span style={{ fontSize: 9, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prices are in {currency} per KG</span>
+              <span style={{ fontSize: 9, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prices in {currency} per kg</span>
             </div>
           )}
         </div>
@@ -640,7 +630,7 @@ function App() {
             {/* ── Row 1: Main Top Bar — Brand + Map Controls ── */}
             <div className="mobile-top-bar">
               <span className="mobile-brand" style={{ display: 'flex', alignItems: 'center' }}>
-                <Store size={18} style={{ marginRight: 4 }} /> Agribridge
+                <img src="/assets/agribridge-icon.svg" alt="Agribridge" style={{ width: 18, height: 18, marginRight: 6 }} /> Agribridge
               </span>
 
               <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -662,7 +652,7 @@ function App() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    style={{ width: 170, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'hidden' }}
+                    style={{ width: 170, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'inherit', overflow: 'hidden' }}
                   >
                     <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 8px', borderBottom: '1px solid #f0f0f0', marginBottom: 4 }}>Base Map</div>
                     <DropdownMenuRadioGroup value={baseLayerType} onValueChange={value => setBaseLayerType(value)}>
@@ -707,9 +697,9 @@ function App() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="start"
-                    style={{ width: 210, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'hidden' }}
+                    style={{ width: 210, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'inherit', overflow: 'hidden' }}
                   >
-                    <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Select Commodity</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Commodity</div>
                     <DropdownMenuRadioGroup value={selectedCommodity} onValueChange={handleCommodityChange}>
                       {commodities.map(c => (
                         <DropdownMenuRadioItem
@@ -738,9 +728,9 @@ function App() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="start"
-                    style={{ width: 170, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'hidden' }}
+                    style={{ width: 170, zIndex: 1100, backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '6px', fontFamily: 'inherit', overflow: 'hidden' }}
                   >
-                    <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Filter by Region</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 8px 6px' }}>Region</div>
                     <DropdownMenuRadioGroup value={selectedRegion} onValueChange={setSelectedRegion}>
                       {regions.map(r => (
                         <DropdownMenuRadioItem
@@ -833,7 +823,7 @@ function App() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Markets</span>
-                    <span style={{ backgroundColor: '#fef9c3', color: '#92400e', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>{filteredMarkets.length}</span>
+                    <span style={{ backgroundColor: '#e6f2ea', color: '#1a6b30', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>{filteredMarkets.length}</span>
                   </div>
                   <button
                     onClick={handleFindNearest}
@@ -918,7 +908,7 @@ function App() {
                     })
                 )}
                 {filteredMarkets.length > 0 && (
-                  <div style={{ textAlign: 'center', padding: '8px 0 4px', fontSize: 9, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prices in {currency} per KG</div>
+                  <div style={{ textAlign: 'center', padding: '8px 0 4px', fontSize: 9, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prices in {currency} per kg</div>
                 )}
               </div>
             </div>
@@ -1040,7 +1030,7 @@ function App() {
 
         {!isMobile && (
           <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 400 }}>
-            <div style={{ backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '10px 8px', fontFamily: 'Inter, -apple-system, sans-serif', width: 148, overflow: 'hidden' }}>
+            <div style={{ backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '10px 8px', fontFamily: 'inherit', width: 148, overflow: 'hidden' }}>
               {/* Header */}
               <div style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 8px 8px', borderBottom: '1px solid #f0f0f0', marginBottom: 4 }}>
                 Base Map
