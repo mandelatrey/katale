@@ -34,9 +34,15 @@ const carrierSchema = new mongoose.Schema({
   },
   activeRoute: routeSubdoc,
   historyRoutes: [routeSubdoc],
+  // Optional: the User who owns/drives this carrier. The WhatsApp webhook
+  // will use this so a driver messaging the bot can update their own
+  // vehicle without specifying an id.
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 });
 
 carrierSchema.index({ status: 1 });
 carrierSchema.index({ category: 1 });
+carrierSchema.index({ owner: 1 });
 
 export default mongoose.model("Carrier", carrierSchema);

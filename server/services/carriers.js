@@ -42,6 +42,10 @@ export async function createCarrier(data, actor) {
   const carrier = new Carrier({
     ...body,
     createdBy: actor?.userId || undefined,
+    // If the actor is a carrier role and no explicit owner was given,
+    // auto-assign them as owner so their subsequent WhatsApp updates bind
+    // to this vehicle.
+    owner: actor?.userId || undefined,
   });
   await carrier.save();
   return carrier;
