@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ROUTES } from '../routes';
 import { LayoutDashboard, Users, Factory, CreditCard, Receipt, Truck, FileText, Settings, Bell, MessageSquare, LogOut, ChevronDown, ChevronUp } from './Icons';
-
-const API_URL = '/api';
+import * as paymentsApi from '../api/payments.js';
 
 export default function NavigationSidebar({ onNavigate }) {
   const location = useLocation();
@@ -20,8 +19,7 @@ export default function NavigationSidebar({ onNavigate }) {
   }
 
   useEffect(() => {
-    fetch(`${API_URL}/payments?status=pending&limit=100`)
-      .then(r => r.json())
+    paymentsApi.listPayments({ status: 'pending', limit: 100 })
       .then(data => {
         if (Array.isArray(data)) setPendingPayments(data.length);
       })

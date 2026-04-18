@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-
-const API_URL = "/api";
+import * as carriersApi from "../api/carriers.js";
+import * as assetsApi from "../api/assets.js";
 
 export function useCarriers(filters = {}) {
   const [data, setData] = useState([]);
@@ -9,13 +9,12 @@ export function useCarriers(filters = {}) {
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams(filters).toString();
-    fetch(`${API_URL}/fleet/carriers${params ? "?" + params : ""}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch carriers");
-        return r.json();
+    carriersApi
+      .listCarriers(filters)
+      .then((d) => {
+        setData(d);
+        setError(null);
       })
-      .then((d) => { setData(d); setError(null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [JSON.stringify(filters)]);
@@ -30,13 +29,12 @@ export function useAssets(filters = {}) {
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams(filters).toString();
-    fetch(`${API_URL}/fleet/assets${params ? "?" + params : ""}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch assets");
-        return r.json();
+    assetsApi
+      .listAssets(filters)
+      .then((d) => {
+        setData(d);
+        setError(null);
       })
-      .then((d) => { setData(d); setError(null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [JSON.stringify(filters)]);

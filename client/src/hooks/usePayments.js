@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-
-const API_URL = "/api";
+import * as paymentsApi from "../api/payments.js";
 
 export function usePayments(filters = {}) {
   const [data, setData] = useState([]);
@@ -9,13 +8,12 @@ export function usePayments(filters = {}) {
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams(filters).toString();
-    fetch(`${API_URL}/payments${params ? "?" + params : ""}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch payments");
-        return r.json();
+    paymentsApi
+      .listPayments(filters)
+      .then((d) => {
+        setData(d);
+        setError(null);
       })
-      .then((d) => { setData(d); setError(null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [JSON.stringify(filters)]);
@@ -30,12 +28,12 @@ export function usePaymentStats() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_URL}/payments/stats`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch payment stats");
-        return r.json();
+    paymentsApi
+      .getPaymentStats()
+      .then((d) => {
+        setData(d);
+        setError(null);
       })
-      .then((d) => { setData(d); setError(null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);

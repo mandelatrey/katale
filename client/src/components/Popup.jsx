@@ -4,6 +4,7 @@ import PriceChart from './PriceChart';
 import TransportCalculator from './TransportCalculator';
 import { Store, Banknote, Info, Truck, TrendingUp } from './Icons';
 import { commodities as allCommodities } from '../constants';
+import * as commoditiesApi from '../api/commodities.js';
 
 export default function Popup({ map, market, prices, onClose, allMarkets, isMobile }) {
   const [activeTab, setActiveTab] = useState('prices');
@@ -26,8 +27,7 @@ export default function Popup({ map, market, prices, onClose, allMarkets, isMobi
       return;
     }
     setLoadingPrices(true);
-    fetch(`/api/prices/market/${market._id}?limit=30`)
-      .then(r => r.json())
+    commoditiesApi.marketPrices(market._id, { limit: 30 })
       .then(data => {
         priceCache.current[market._id] = data;
         setMarketPrices(data);

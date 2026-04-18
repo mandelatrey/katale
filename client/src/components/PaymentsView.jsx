@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, ArrowUpRight, ArrowDownRight } from './Icons';
 import Tooltip from './Tooltip';
+import * as paymentsApi from '../api/payments.js';
 
-const API_URL = '/api';
 const UGX_TO_USD = 3700;
 
 function SummaryCard({ icon, label, value, sub, trend, color = '#1f8a3e', loading }) {
@@ -73,12 +73,10 @@ export default function PaymentsView({ currency = 'UGX', isMobile = false }) {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [pmtRes, statsRes] = await Promise.all([
-          fetch(`${API_URL}/payments?limit=100`),
-          fetch(`${API_URL}/payments/stats`),
+        const [pmtData, statsData] = await Promise.all([
+          paymentsApi.listPayments({ limit: 100 }),
+          paymentsApi.getPaymentStats(),
         ]);
-        if (!pmtRes.ok) throw new Error('Failed to load payments');
-        const [pmtData, statsData] = await Promise.all([pmtRes.json(), statsRes.json()]);
         setPayments(pmtData);
         setStats(statsData);
       } catch (err) {

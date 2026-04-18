@@ -1,83 +1,62 @@
 import express from "express";
+import { listInsights } from "../services/insights.js";
 import {
-  getInsights,
-  getLatestPrices,
+  listLatestPrices,
   getPriceHistory,
   comparePrices,
-  getTransportPrice,
-} from "../services/intelligence.js";
-import { getMarkets, getNearbyMarkets } from "../services/markets.js";
+  getTransportEstimate,
+} from "../services/commodities.js";
+import { listMarkets, listNearbyMarkets } from "../services/markets.js";
+import { handler, actorFromRequest } from "../lib/routeAdapter.js";
 
 const router = express.Router();
 
 // --- Markets ---
 
-router.get("/markets", async (req, res) => {
-  try {
-    const markets = await getMarkets(req.query);
-    res.json(markets);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+router.get(
+  "/markets",
+  handler((req) => listMarkets(req.query, actorFromRequest(req))),
+);
 
-router.get("/markets/nearby", async (req, res) => {
-  try {
-    const { lng, lat, maxDistance } = req.query;
-    const markets = await getNearbyMarkets(lng, lat, maxDistance);
-    res.json(markets);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+router.get(
+  "/markets/nearby",
+  handler((req) => listNearbyMarkets(req.query, actorFromRequest(req))),
+);
 
 // --- Prices ---
 
-router.get("/prices/latest", async (req, res) => {
-  try {
-    const prices = await getLatestPrices(req.query);
-    res.json(prices);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+router.get(
+  "/prices/latest",
+  handler((req) => listLatestPrices(req.query, actorFromRequest(req))),
+);
 
-router.get("/prices/history/:commodity", async (req, res) => {
-  try {
-    const prices = await getPriceHistory(req.params.commodity, req.query);
-    res.json(prices);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+router.get(
+  "/prices/history/:commodity",
+  handler((req) =>
+    getPriceHistory(
+      { commodity: req.params.commodity, ...req.query },
+      actorFromRequest(req),
+    ),
+  ),
+);
 
-router.get("/prices/compare/:commodity", async (req, res) => {
-  try {
-    const prices = await comparePrices(req.params.commodity);
-    res.json(prices);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+router.get(
+  "/prices/compare/:commodity",
+  handler((req) =>
+    comparePrices({ commodity: req.params.commodity }, actorFromRequest(req)),
+  ),
+);
 
-router.get("/prices/transport/:fromId/:toId", async (req, res) => {
-  try {
-    const result = await getTransportPrice(req.params.fromId, req.params.toId);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
-  }
-});
+router.get(
+  "/prices/transport/:fromId/:toId",
+  handler((req) => getTransportEstimate(req.params, actorFromRequest(req))),
+);
 
 // --- Insights ---
 
-router.get("/insights", async (req, res) => {
-  try {
-    const insights = await getInsights();
-    res.json(insights);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+router.get(
+  "/insights",
+  handler((req) => listInsights({}, actorFromRequest(req))),
+);
 
 export default router;

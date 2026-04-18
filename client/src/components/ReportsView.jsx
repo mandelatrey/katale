@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, ArrowUpRight } from './Icons';
 import Tooltip from './Tooltip';
-
-const API_URL = '/api';
+import * as reportsApi from '../api/reports.js';
 
 function SummaryCard({ icon, label, value, sub, trend, color = '#1f8a3e', loading }) {
   const trendUp = trend > 0;
@@ -121,9 +120,7 @@ export default function ReportsView({ currency = 'UGX', isMobile = false }) {
   useEffect(() => {
     async function fetchReports() {
       try {
-        const res = await fetch(`${API_URL}/reports?limit=50`);
-        if (!res.ok) throw new Error('Failed to load reports');
-        const data = await res.json();
+        const data = await reportsApi.listReports({ limit: 50 });
         setReports(data);
       } catch (err) {
         setError(err.message);

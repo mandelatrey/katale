@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-
-const API_URL = "/api";
+import * as transactionsApi from "../api/transactions.js";
 
 export function useTransactions(filters = {}) {
   const [data, setData] = useState([]);
@@ -9,13 +8,12 @@ export function useTransactions(filters = {}) {
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams(filters).toString();
-    fetch(`${API_URL}/transactions${params ? "?" + params : ""}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch transactions");
-        return r.json();
+    transactionsApi
+      .listTransactions(filters)
+      .then((d) => {
+        setData(d);
+        setError(null);
       })
-      .then((d) => { setData(d); setError(null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [JSON.stringify(filters)]);
@@ -30,12 +28,12 @@ export function useTransactionStats() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_URL}/transactions/stats`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch transaction stats");
-        return r.json();
+    transactionsApi
+      .getTransactionStats()
+      .then((d) => {
+        setData(d);
+        setError(null);
       })
-      .then((d) => { setData(d); setError(null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
