@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "node index.js",
+    "dev:webhook": "PORT=3002 node index.js",
     "seed": "node seed.js",
     "test": "vitest run",
     "test:watch": "vitest",
