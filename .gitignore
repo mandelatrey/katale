@@ -28,3 +28,8 @@ Thumbs.db
 
 coverage/
 CLAUDE.md
+server/.env
+
+.env
+.env.*
+!.env.exampleserver/.env
