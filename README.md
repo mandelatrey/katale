@@ -48,3 +48,45 @@ npm run dev
 MONGODB_URI=mongodb://localhost:27017/uganda-markets
 PORT=3001
 ```
+
+## WhatsApp integration — prep status
+
+Work-in-progress scaffolding to let brokers, carriers, and farmers hit
+the same API from WhatsApp (Twilio sandbox → Meta Cloud API). **Nothing
+is live yet** — there are no outbound messages and no provider
+credentials in the tree.
+
+What's in place:
+
+- **Service layer** (`server/services/*`): per-domain modules, Zod-validated
+  at the boundary, take an explicit `actor = { userId, source }`. The
+  same functions are used by REST routes today and will be called by
+  the webhook tomorrow.
+- **User model** (`server/models/User.js`): `phoneE164` keyed identity.
+  Run `npm run migrate:users` (or `RUN_DEV_SEED=1 npm run migrate:users`
+  for three demo users). See `docs/auth-model.md` for the per-table
+  access matrix.
+- **Webhook scaffold** (`server/whatsapp/`): Express router mounted at
+  `/api/whatsapp`. Provider/intent/router/formatter/session stubs are
+  wired together — every handler returns `not_implemented` until the
+  Twilio and Meta adapters land. See `server/whatsapp/README.md`.
+- **Tests** (`npm test` in `server/`): Vitest + mongodb-memory-server.
+  Pure-unit tests (validation, route adapter, provider selector,
+  formatter, session store) run without a DB; service tests spin up an
+  ephemeral Mongo. Tests skip gracefully when the Mongo binary isn't
+  available locally.
+- **Simulator**: `npm run whatsapp:simulate -- "hi" --provider twilio`
+  posts a fake inbound to the local webhook (expects `dev:webhook` on
+  :3002).
+
+What's still to do before production WhatsApp traffic:
+
+1. Implement `server/whatsapp/providers/{twilio,meta}.js` (parseInbound,
+   sendOutbound, Meta verification).
+2. Fill `server/whatsapp/intents/parse.js` and the `switch` in
+   `server/whatsapp/router.js` — start with the top intents listed in
+   `server/whatsapp/README.md`.
+3. Replace the in-memory session store with a Mongoose-backed store
+   (TTL ~30 min).
+4. Enforce ownership rules in the service layer per
+   `docs/auth-model.md` and add a signup flow for unknown numbers.

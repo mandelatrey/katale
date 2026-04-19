@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FileText, ArrowUpRight, ArrowDownRight, ChevronRight } from './Icons';
 import Tooltip from './Tooltip';
+import * as statementsApi from '../api/statements.js';
 
-const API_URL = '/api';
 const UGX_TO_USD = 3700;
 
 function SummaryCard({ icon, label, value, sub, trend, color = '#1f8a3e', loading }) {
@@ -170,9 +170,7 @@ export default function StatementsView({ currency = 'UGX', isMobile = false }) {
   useEffect(() => {
     async function fetchStatements() {
       try {
-        const res = await fetch(`${API_URL}/statements`);
-        if (!res.ok) throw new Error('Failed to load statements');
-        const data = await res.json();
+        const data = await statementsApi.listStatements();
         setStatements(data);
       } catch (err) {
         setError(err.message);
@@ -192,8 +190,7 @@ export default function StatementsView({ currency = 'UGX', isMobile = false }) {
     if (!detailCache[stmt._id]) {
       setLoadingDetail(stmt._id);
       try {
-        const res = await fetch(`${API_URL}/statements/${stmt._id}`);
-        const detail = await res.json();
+        const detail = await statementsApi.getStatement(stmt._id);
         setDetailCache(prev => ({ ...prev, [stmt._id]: detail }));
       } catch (e) {
         // ignore, will show empty entries

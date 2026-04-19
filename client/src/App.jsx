@@ -37,8 +37,8 @@ import {
 import { ChevronDown, List, Navigation, TriangleAlert, MapPin, Store, LayoutGrid, Leaf, Receipt, MessageCircle, MoreHorizontal, Truck, Package, CreditCard, BarChart2, FileText, Users, Bell, Settings, LogOut } from './components/Icons';
 import { commodities, regions } from './constants';
 import { useIsMobile } from './hooks/use-mobile';
-
-const API_URL = '/api';
+import * as marketsApi from './api/markets.js';
+import * as commoditiesApi from './api/commodities.js';
 
 const MAP_TILER_API_KEY = import.meta.env.VITE_MAP_TILER_API_KEY;
 
@@ -309,8 +309,7 @@ function App() {
   // Fix #14: wrap fetch functions with useCallback
   const fetchMarkets = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/markets`);
-      const data = await res.json();
+      const data = await marketsApi.listMarkets();
       setMarkets(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Failed to load markets');
@@ -320,8 +319,7 @@ function App() {
   const fetchPrices = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/prices/latest?commodity=${selectedCommodity}`);
-      const data = await res.json();
+      const data = await commoditiesApi.latestPrices({ commodity: selectedCommodity });
       setPrices(Array.isArray(data) ? data : []);
     } catch (err) {
       setError('Failed to load prices');
@@ -338,8 +336,7 @@ function App() {
         setUserLocation([longitude, latitude]);
 
         try {
-          const res = await fetch(`${API_URL}/markets/nearest/${longitude}/${latitude}?maxDistance=50000`);
-          const data = await res.json();
+          const data = await marketsApi.listNearbyMarkets(longitude, latitude, 50000);
           setNearestMarkets(Array.isArray(data) ? data : []);
 
           map.getView().animate({

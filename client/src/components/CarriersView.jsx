@@ -14,6 +14,7 @@ import { fromLonLat } from 'ol/proj';
 import { Style, Fill, Stroke, Circle as CircleStyle } from 'ol/style';
 import { MapPin, Clock, MessageCircle, Phone, MoreHorizontal, ChevronDown, Truck, Package, Activity, ArrowUpRight, X, Check, Pencil, Trash2 } from './Icons';
 import Tooltip from './Tooltip';
+import * as carriersApi from '../api/carriers.js';
 
 const STATUS_COLORS = {
   'ON THE WAY': { text: '#1f8a3e', bg: '#e6f2ea' },
@@ -346,9 +347,7 @@ export default function CarriersView() {
   const fetchCarriers = useCallback(async (search = searchQuery) => {
     setLoading(true);
     try {
-      const params = search ? `?search=${encodeURIComponent(search)}` : '';
-      const res = await fetch(`/api/carriers${params}`);
-      const data = await res.json();
+      const data = await carriersApi.listCarriers(search ? { search } : {});
       setCarriers(data);
       setSelectedDriverId(prev => {
         if (prev && data.find(c => c._id === prev)) return prev;
@@ -403,13 +402,7 @@ export default function CarriersView() {
   const pct = (n) => ((n / total) * 100).toFixed(1);
 
   async function handleAddDriver(formData) {
-    const res = await fetch('/api/carriers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || 'Failed to add driver');
-    const created = await res.json();
+    const created = await carriersApi.createCarrier(formData);
     setShowAddModal(false);
     await fetchCarriers();
     setSelectedDriverId(created._id);
@@ -417,7 +410,7 @@ export default function CarriersView() {
 
   async function handleDeleteDriver() {
     if (!selectedDriver) return;
-    await fetch(`/api/carriers/${selectedDriver._id}`, { method: 'DELETE' });
+    await carriersApi.deleteCarrier(selectedDriver._id);
     setShowDeleteConfirm(false);
     setShowDriverMenu(false);
     await fetchCarriers();
@@ -432,10 +425,9 @@ export default function CarriersView() {
   async function handleSaveContact() {
     if (!selectedDriver) return;
     setContactSaving(true);
-    await fetch(`/api/carriers/${selectedDriver._id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: contactDraft.name, phone: contactDraft.phone }),
+    await carriersApi.updateCarrier(selectedDriver._id, {
+      name: contactDraft.name,
+      phone: contactDraft.phone,
     });
     setEditingContact(false);
     setContactSaving(false);

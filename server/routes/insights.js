@@ -1,15 +1,12 @@
 import express from "express";
-import { getInsights } from "../services/intelligence.js";
+import { listInsights } from "../services/insights.js";
+import { handler, actorFromRequest } from "../lib/routeAdapter.js";
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
-  try {
-    const insights = await getInsights();
-    res.json(insights);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+router.get(
+  "/",
+  handler((req) => listInsights({}, actorFromRequest(req))),
+);
 
 export default router;
