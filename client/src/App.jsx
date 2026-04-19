@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { SidebarProvider } from './components/ui/sidebar';
+import { TooltipProvider } from './components/ui/tooltip';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ROUTES } from './routes';
 import Map from 'ol/Map';
@@ -374,7 +376,11 @@ function App() {
   const currentBaseLayer = BASE_LAYERS.find(l => l.id === baseLayerType);
 
   return (
-    <div className="app">
+    <TooltipProvider>
+    <SidebarProvider
+      defaultOpen={localStorage.getItem('nav-collapsed') !== 'true'}
+      style={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden', background: 'white', '--sidebar-width-icon': '3.75rem' }}
+    >
       {!isMobile && (
         <NavigationSidebar
           onNavigate={navigate}
@@ -1119,7 +1125,8 @@ function App() {
       </div>
       </div>
       </div>
-    </div>
+    </SidebarProvider>
+    </TooltipProvider>
   );
 }
 
