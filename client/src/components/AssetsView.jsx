@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Truck, Package, ArrowUpRight, ArrowDownRight } from './Icons';
 import Tooltip from './Tooltip';
+import * as assetsApi from '../api/assets.js';
 
-const API_URL = '/api';
 const UGX_TO_USD = 3700;
 
 function SummaryCard({ icon, label, value, sub, trend, color = '#1f8a3e', loading }) {
@@ -142,9 +142,7 @@ export default function AssetsView({ currency = 'UGX', isMobile = false }) {
   useEffect(() => {
     async function fetchAssets() {
       try {
-        const res = await fetch(`${API_URL}/assets`);
-        if (!res.ok) throw new Error('Failed to load assets');
-        const data = await res.json();
+        const data = await assetsApi.listAssets();
         setAssets(data);
       } catch (err) {
         setError(err.message);

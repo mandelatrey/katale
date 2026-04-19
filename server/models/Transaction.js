@@ -21,11 +21,20 @@ const transactionSchema = new mongoose.Schema({
     default: "pending",
   },
   date: { type: Date, default: Date.now },
+  // Populated by web auth (later) or by the WhatsApp webhook once a
+  // phone number resolves to a User. Optional so existing seeded data
+  // without a user stays valid.
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  buyerUser: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  sellerUser: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 });
 
 transactionSchema.index({ commodity: 1, date: -1 });
 transactionSchema.index({ status: 1 });
 transactionSchema.index({ fromMarket: 1 });
 transactionSchema.index({ toMarket: 1 });
+transactionSchema.index({ createdBy: 1 });
+transactionSchema.index({ buyerUser: 1 });
+transactionSchema.index({ sellerUser: 1 });
 
 export default mongoose.model("Transaction", transactionSchema);

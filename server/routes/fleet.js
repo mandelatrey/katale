@@ -1,101 +1,66 @@
 import express from "express";
 import {
-  getCarriers,
+  listCarriers,
   getCarrierStats,
   getCarrierById,
   createCarrier,
   updateCarrier,
   deleteCarrier,
-  getAssets,
+} from "../services/carriers.js";
+import {
+  listAssets,
   getAssetStats,
   getAssetById,
-} from "../services/fleet.js";
+} from "../services/assets.js";
+import { handler, actorFromRequest } from "../lib/routeAdapter.js";
 
 const router = express.Router();
 
 // --- Carriers ---
 
-router.get("/carriers", async (req, res) => {
-  try {
-    const carriers = await getCarriers(req.query);
-    res.json(carriers);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get("/carriers/stats", async (req, res) => {
-  try {
-    const stats = await getCarrierStats();
-    res.json(stats);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get("/carriers/:id", async (req, res) => {
-  try {
-    const carrier = await getCarrierById(req.params.id);
-    res.json(carrier);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
-  }
-});
-
-router.post("/carriers", async (req, res) => {
-  try {
-    const carrier = await createCarrier(req.body);
+router.get(
+  "/carriers",
+  handler((req) => listCarriers(req.query, actorFromRequest(req))),
+);
+router.get(
+  "/carriers/stats",
+  handler((req) => getCarrierStats({}, actorFromRequest(req))),
+);
+router.get(
+  "/carriers/:id",
+  handler((req) => getCarrierById(req.params, actorFromRequest(req))),
+);
+router.post(
+  "/carriers",
+  handler(async (req, res) => {
+    const carrier = await createCarrier(req.body, actorFromRequest(req));
     res.status(201).json(carrier);
-  } catch (err) {
-    res.status(err.status || 400).json({ error: err.message });
-  }
-});
-
-router.put("/carriers/:id", async (req, res) => {
-  try {
-    const carrier = await updateCarrier(req.params.id, req.body);
-    res.json(carrier);
-  } catch (err) {
-    res.status(err.status || 400).json({ error: err.message });
-  }
-});
-
-router.delete("/carriers/:id", async (req, res) => {
-  try {
-    const result = await deleteCarrier(req.params.id);
-    res.json(result);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
-  }
-});
+  }),
+);
+router.put(
+  "/carriers/:id",
+  handler((req) =>
+    updateCarrier({ id: req.params.id, ...req.body }, actorFromRequest(req)),
+  ),
+);
+router.delete(
+  "/carriers/:id",
+  handler((req) => deleteCarrier(req.params, actorFromRequest(req))),
+);
 
 // --- Assets ---
 
-router.get("/assets", async (req, res) => {
-  try {
-    const assets = await getAssets(req.query);
-    res.json(assets);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get("/assets/stats", async (req, res) => {
-  try {
-    const stats = await getAssetStats();
-    res.json(stats);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.get("/assets/:id", async (req, res) => {
-  try {
-    const asset = await getAssetById(req.params.id);
-    res.json(asset);
-  } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
-  }
-});
+router.get(
+  "/assets",
+  handler((req) => listAssets(req.query, actorFromRequest(req))),
+);
+router.get(
+  "/assets/stats",
+  handler((req) => getAssetStats({}, actorFromRequest(req))),
+);
+router.get(
+  "/assets/:id",
+  handler((req) => getAssetById(req.params, actorFromRequest(req))),
+);
 
 export default router;

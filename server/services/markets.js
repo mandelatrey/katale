@@ -1,37 +1,56 @@
 import Market from "../models/Market.js";
+import { parse } from "../lib/validate.js";
+import { notFound } from "../lib/errors.js";
+import {
+  listMarketsSchema,
+  nearbyMarketsSchema,
+  boundsMarketsSchema,
+  marketIdSchema,
+} from "./schemas/markets.js";
 
-export async function getMarkets({ region, district, marketType } = {}) {
-  const filter = {};
-  if (region) filter.region = region;
-  if (district) filter.district = district;
-  if (marketType) filter.marketType = marketType;
+// Markets are read-only today. The WhatsApp "find markets near me" intent
+// will call listNearbyMarkets with a phone-resolved GPS coordinate.
+
+export async function listMarkets(params = {}, _actor) {
+  const filter = parse(listMarketsSchema, params, "market filter");
   return Market.find(filter);
 }
 
-export async function getMarketById(id) {
+export async function getMarketById(params, _actor) {
+  const { id } = parse(marketIdSchema, params, "market id");
   const market = await Market.findById(id);
-  if (!market) throw Object.assign(new Error("Market not found"), { status: 404 });
+  if (!market) throw notFound("Market not found");
   return market;
 }
 
-export async function getNearbyMarkets(lng, lat, maxDistance = 50000) {
+export async function listNearbyMarkets(params, _actor) {
+  const { lng, lat, maxDistance } = parse(
+    nearbyMarketsSchema,
+    params,
+    "nearby filter",
+  );
   return Market.find({
     location: {
       $near: {
-        $geometry: { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] },
-        $maxDistance: parseFloat(maxDistance),
+        $geometry: { type: "Point", coordinates: [lng, lat] },
+        $maxDistance: maxDistance,
       },
     },
   }).limit(10);
 }
 
-export async function getMarketsInBounds(minLng, maxLng, minLat, maxLat) {
+export async function listMarketsInBounds(params, _actor) {
+  const { minLng, maxLng, minLat, maxLat } = parse(
+    boundsMarketsSchema,
+    params,
+    "bounds filter",
+  );
   return Market.find({
     location: {
       $geoWithin: {
         $box: [
-          [parseFloat(minLng), parseFloat(minLat)],
-          [parseFloat(maxLng), parseFloat(maxLat)],
+          [minLng, minLat],
+          [maxLng, maxLat],
         ],
       },
     },

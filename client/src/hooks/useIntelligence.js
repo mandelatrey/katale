@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-
-const API_URL = "/api";
+import * as commoditiesApi from "../api/commodities.js";
+import * as insightsApi from "../api/insights.js";
 
 export function useLatestPrices(filters = {}) {
   const [data, setData] = useState([]);
@@ -9,13 +9,12 @@ export function useLatestPrices(filters = {}) {
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams(filters).toString();
-    fetch(`${API_URL}/intelligence/prices/latest${params ? "?" + params : ""}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch latest prices");
-        return r.json();
+    commoditiesApi
+      .latestPrices(filters)
+      .then((d) => {
+        setData(d);
+        setError(null);
       })
-      .then((d) => { setData(d); setError(null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [JSON.stringify(filters)]);
@@ -30,12 +29,12 @@ export function useInsights() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_URL}/intelligence/insights`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch insights");
-        return r.json();
+    insightsApi
+      .listInsights()
+      .then((d) => {
+        setData(d);
+        setError(null);
       })
-      .then((d) => { setData(d); setError(null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);

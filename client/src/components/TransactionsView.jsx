@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react';
 import { CreditCard, Package, ArrowUpRight, ArrowDownRight, Plus, X } from './Icons';
 import { commodities } from '../constants';
 import Tooltip from './Tooltip';
+import * as marketsApi from '../api/markets.js';
+import * as carriersApi from '../api/carriers.js';
+import * as assetsApi from '../api/assets.js';
+import * as transactionsApi from '../api/transactions.js';
 
-const API_URL = '/api';
 const UGX_TO_USD = 3700;
 
 const PAYMENT_METHODS = [
@@ -99,9 +102,9 @@ function AddTransactionModal({ onClose, onCreated }) {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API_URL}/markets`).then(r => r.json()),
-      fetch(`${API_URL}/carriers`).then(r => r.json()),
-      fetch(`${API_URL}/assets`).then(r => r.json()),
+      marketsApi.listMarkets(),
+      carriersApi.listCarriers(),
+      assetsApi.listAssets(),
     ]).then(([m, c, a]) => {
       setMarkets(Array.isArray(m) ? m : []);
       setCarriers(Array.isArray(c) ? c : []);
@@ -142,16 +145,7 @@ function AddTransactionModal({ onClose, onCreated }) {
         paymentPaidBy:   form.buyer  || undefined,
         paymentPaidTo:   form.seller || undefined,
       };
-      const res = await fetch(`${API_URL}/transactions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to create transaction');
-      }
-      const created = await res.json();
+      const created = await transactionsApi.createTransaction(body);
       onCreated(created);
       onClose();
     } catch (err) {
@@ -341,12 +335,10 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
 
   async function fetchData() {
     try {
-      const [txRes, statsRes] = await Promise.all([
-        fetch(`${API_URL}/transactions?limit=100`),
-        fetch(`${API_URL}/transactions/stats`),
+      const [txData, statsData] = await Promise.all([
+        transactionsApi.listTransactions({ limit: 100 }),
+        transactionsApi.getTransactionStats(),
       ]);
-      if (!txRes.ok) throw new Error('Failed to load transactions');
-      const [txData, statsData] = await Promise.all([txRes.json(), statsRes.json()]);
       setTransactions(txData);
       setStats(statsData);
     } catch (err) {

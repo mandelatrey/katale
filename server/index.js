@@ -11,7 +11,7 @@ import paymentRoutes from "./routes/payments.js";
 import reportRoutes from "./routes/reports.js";
 import statementRoutes from "./routes/statements.js";
 import carrierRoutes from "./routes/carriers.js";
-import whatsappRoutes from "./routes/whatsapp.js";
+import whatsappRoutes from "./whatsapp/index.js";
 import fleetRoutes from "./routes/fleet.js";
 import intelligenceRoutes from "./routes/intelligence.js";
 

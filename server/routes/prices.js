@@ -1,62 +1,50 @@
 import express from "express";
 import {
-  getLatestPrices,
+  listLatestPrices,
   getPriceHistory,
   getMarketPrices,
   comparePrices,
-  getTransportPrice,
-} from "../services/intelligence.js";
+  getTransportEstimate,
+} from "../services/commodities.js";
+import { handler, actorFromRequest } from "../lib/routeAdapter.js";
 
 const router = express.Router();
 
-// Get latest prices for all markets
-router.get("/latest", async (req, res) => {
-  try {
-    const prices = await getLatestPrices(req.query);
-    res.json(prices);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+router.get(
+  "/latest",
+  handler((req) => listLatestPrices(req.query, actorFromRequest(req))),
+);
 
-// Get price history for a commodity
-router.get("/history/:commodity", async (req, res) => {
-  try {
-    const prices = await getPriceHistory(req.params.commodity, req.query);
-    res.json(prices);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+router.get(
+  "/history/:commodity",
+  handler((req) =>
+    getPriceHistory(
+      { commodity: req.params.commodity, ...req.query },
+      actorFromRequest(req),
+    ),
+  ),
+);
 
-// Get prices for a specific market
-router.get("/market/:marketId", async (req, res) => {
-  try {
-    const prices = await getMarketPrices(req.params.marketId, req.query);
-    res.json(prices);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+router.get(
+  "/market/:marketId",
+  handler((req) =>
+    getMarketPrices(
+      { marketId: req.params.marketId, ...req.query },
+      actorFromRequest(req),
+    ),
+  ),
+);
 
-// Compare prices across markets for a commodity
-router.get("/compare/:commodity", async (req, res) => {
-  try {
-    const prices = await comparePrices(req.params.commodity);
-    res.json(prices);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+router.get(
+  "/compare/:commodity",
+  handler((req) =>
+    comparePrices({ commodity: req.params.commodity }, actorFromRequest(req)),
+  ),
+);
 
-// Get transport estimate between two markets
-router.get("/transport/:fromId/:toId", async (req, res) => {
-  try {
-    const result = await getTransportPrice(req.params.fromId, req.params.toId);
-    res.json(result);
-  } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
-  }
-});
+router.get(
+  "/transport/:fromId/:toId",
+  handler((req) => getTransportEstimate(req.params, actorFromRequest(req))),
+);
 
 export default router;

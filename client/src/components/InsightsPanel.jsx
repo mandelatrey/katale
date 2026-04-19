@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { X, TrendingUp } from './Icons';
+import * as insightsApi from '../api/insights.js';
 
 export default function InsightsPanel({ onClose }) {
   const [insights, setInsights] = useState([]);
@@ -11,9 +12,7 @@ export default function InsightsPanel({ onClose }) {
   useEffect(() => {
     async function fetchInsights() {
       try {
-        const res = await fetch('/api/insights');
-        if (!res.ok) throw new Error('Failed to load insights');
-        const data = await res.json();
+        const data = await insightsApi.listInsights();
         setInsights(data);
       } catch (err) {
         setError(err.message);

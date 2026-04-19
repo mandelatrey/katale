@@ -7,8 +7,10 @@ import {
 } from './Icons';
 import CarriersView from './CarriersView';
 import { commodities } from '../constants';
-
-const API_URL = '/api';
+import * as commoditiesApi from '../api/commodities.js';
+import * as carriersApi from '../api/carriers.js';
+import * as assetsApi from '../api/assets.js';
+import * as paymentsApi from '../api/payments.js';
 
 // Commodity color palette (matches PriceChart)
 const COMMODITY_COLORS = {
@@ -82,8 +84,7 @@ function PriceTrendChart({ selectedCommodities, currency, isMobile = false }) {
     setLoading(true);
     Promise.all(
       selectedCommodities.map(c =>
-        fetch(`${API_URL}/prices/history/${c}?days=30`)
-          .then(r => r.json())
+        commoditiesApi.priceHistory(c, { days: 30 })
           .then(data => ({ commodity: c, data }))
           .catch(() => ({ commodity: c, data: [] }))
       )
@@ -297,8 +298,7 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
   // Fetch all latest prices (across all commodities) for stats
   useEffect(() => {
     setLoadingPrices(true);
-    fetch(`${API_URL}/prices/latest`)
-      .then(r => r.json())
+    commoditiesApi.latestPrices()
       .then(data => {
         setLatestPrices(Array.isArray(data) ? data : []);
         setLoadingPrices(false);
@@ -309,8 +309,7 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
   // Fetch real carriers
   useEffect(() => {
     setLoadingCarriers(true);
-    fetch(`${API_URL}/carriers`)
-      .then(r => r.json())
+    carriersApi.listCarriers()
       .then(data => {
         setCarriers(Array.isArray(data) ? data : []);
         setLoadingCarriers(false);
@@ -320,13 +319,11 @@ export default function Dashboard({ markets = [], currency = 'UGX', isMobile = f
 
   // Fetch asset count and pending payment count
   useEffect(() => {
-    fetch(`${API_URL}/assets?status=active`)
-      .then(r => r.json())
+    assetsApi.listAssets({ status: 'active' })
       .then(data => setAssetCount(Array.isArray(data) ? data.length : 0))
       .catch(() => setAssetCount(0));
 
-    fetch(`${API_URL}/payments?status=pending&limit=500`)
-      .then(r => r.json())
+    paymentsApi.listPayments({ status: 'pending', limit: 500 })
       .then(data => setPendingPaymentCount(Array.isArray(data) ? data.length : 0))
       .catch(() => setPendingPaymentCount(0));
   }, []);

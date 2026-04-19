@@ -18,11 +18,17 @@ const paymentSchema = new mongoose.Schema({
   },
   paidBy: { type: String },
   paidTo: { type: String },
+  // Optional User refs — populated when the acting user is known
+  // (web session or WhatsApp-resolved phone). See docs/auth-model.md.
+  paidByUser: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  paidToUser: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   reference: { type: String },
   date: { type: Date, default: Date.now },
 });
 
 paymentSchema.index({ transaction: 1 });
 paymentSchema.index({ status: 1, date: -1 });
+paymentSchema.index({ paidByUser: 1 });
+paymentSchema.index({ paidToUser: 1 });
 
 export default mongoose.model("Payment", paymentSchema);
