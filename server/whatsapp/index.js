@@ -25,10 +25,18 @@ router.get("/health", (_req, res) => {
 });
 
 // Provider verification challenge (Meta Cloud API uses GET for this).
-// Left as a stub: real impl will compare req.query["hub.verify_token"]
-// against process.env.META_VERIFY_TOKEN.
-router.get("/webhook", (_req, res) => {
-  res.status(501).json({ error: "verification not implemented" });
+router.get("/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === process.env.META_VERIFY_TOKEN) {
+    console.log("[whatsapp] Webhook verified successfully");
+    return res.status(200).send(challenge);
+  }
+
+  console.warn("[whatsapp] Webhook verification failed - token mismatch or invalid mode");
+  res.status(403).json({ error: "Verification failed" });
 });
 
 // Main inbound webhook. Accepts messages from Twilio or Meta; the provider

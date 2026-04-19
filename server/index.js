@@ -22,6 +22,7 @@ const MONGODB_URI =
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // For Twilio form-encoded webhooks
 
 app.use("/api/markets", marketRoutes);
 app.use("/api/prices", priceRoutes);
