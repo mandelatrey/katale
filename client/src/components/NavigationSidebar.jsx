@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ROUTES } from '../routes';
-import { LayoutDashboard, Users, Factory, CreditCard, Receipt, Truck, FileText, Settings, Bell, MessageSquare, LogOut, ChevronDown, ChevronUp } from './Icons';
+import { LayoutDashboard, Users, Factory, CreditCard, Receipt, Truck, FileText, Settings, Bell, MessageSquare, LogOut, ChevronDown, ChevronUp, ChevronRight } from './Icons';
 import * as paymentsApi from '../api/payments.js';
 import {
   Sidebar,
@@ -16,11 +16,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from './ui/sidebar';
-import {
-  LayoutDashboard, Users, Factory, CreditCard, Receipt,
-  Truck, FileText, Settings, Bell, MessageSquare, LogOut,
-  ChevronDown, ChevronRight,
-} from './Icons';
 
 const API_URL = '/api';
 
