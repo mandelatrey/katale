@@ -111,10 +111,16 @@ if (!authtoken) {
       } catch (err) {
         console.error("[ngrok] error closing tunnel:", err.message);
       }
+      clearInterval(keepAlive);
       process.exit(0);
     };
     process.on("SIGINT", () => shutdown("SIGINT"));
     process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+    // The listener object doesn't ref the event loop on its own, so
+    // without this the script returns from top-level await and Node
+    // exits cleanly — taking the tunnel down with it.
+    const keepAlive = setInterval(() => {}, 1 << 30);
   } catch (err) {
     console.error("[ngrok] failed to start tunnel:", err.message || err);
     process.exit(1);
