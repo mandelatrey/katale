@@ -47,7 +47,31 @@ npm run dev
 ```
 MONGODB_URI=mongodb://localhost:27017/uganda-markets
 PORT=3001
+
+# WhatsApp webhook (started by `npm run dev`)
+WHATSAPP_WEBHOOK_PORT=3002
+NGROK_AUTHTOKEN=       # optional; leave blank to skip the tunnel
+NGROK_DOMAIN=          # optional; paid plans only
+
+# Twilio WhatsApp sandbox
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WHATSAPP_FROM=
+
+# Meta Cloud API
+META_VERIFY_TOKEN=
+META_ACCESS_TOKEN=
+META_PHONE_NUMBER_ID=
+META_APP_SECRET=
 ```
+
+`npm run dev` now starts four processes concurrently: the API server
+(`:3001`), the Vite client, the WhatsApp webhook (`:3002`), and an ngrok
+tunnel pointing at the webhook. The ngrok process prints the public
+webhook URL at startup — copy it into the Twilio sandbox or Meta Cloud
+API console. Without `NGROK_AUTHTOKEN` the tunnel is skipped and the
+other three processes run as before. Use `npm run dev:api-only` to run
+just the API + client without the WhatsApp stack.
 
 ## WhatsApp integration — prep status
 
