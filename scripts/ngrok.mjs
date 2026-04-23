@@ -44,8 +44,11 @@ function loadEnvFile(path) {
   }
 }
 
-loadEnvFile(resolve(__dirname, "..", "server", ".env"));
-loadEnvFile(resolve(__dirname, "..", ".env"));
+const envPaths = [
+  resolve(__dirname, "..", "server", ".env"),
+  resolve(__dirname, "..", ".env"),
+];
+for (const p of envPaths) loadEnvFile(p);
 
 const authtoken = process.env.NGROK_AUTHTOKEN;
 const port = Number(process.env.WHATSAPP_WEBHOOK_PORT || 3002);
@@ -53,8 +56,10 @@ const domain = process.env.NGROK_DOMAIN;
 
 if (!authtoken) {
   console.log(
-    "[ngrok] NGROK_AUTHTOKEN not set — skipping tunnel. " +
-      "Add it to server/.env to expose the WhatsApp webhook publicly.",
+    "[ngrok] NGROK_AUTHTOKEN not set — skipping tunnel.\n" +
+      "  Add it to one of these files:\n" +
+      envPaths.map((p) => `    ${p}`).join("\n") +
+      "\n  Example line:  NGROK_AUTHTOKEN=your_token_here",
   );
   // Keep the process alive so `concurrently` doesn't flag this as a
   // failure; exiting immediately would also kill sibling processes when
