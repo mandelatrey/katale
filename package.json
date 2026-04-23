@@ -4,13 +4,18 @@
   "description": "Market Access & Price Transparency Tool for Uganda's Agricultural Markets",
   "scripts": {
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "dev": "concurrently -n api,web,wa,ngrok -c blue,green,magenta,yellow \"npm run server\" \"npm run client\" \"npm run whatsapp\" \"npm run ngrok\"",
+    "dev:api-only": "concurrently -n api,web -c blue,green \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm run dev",
+    "whatsapp": "cd server && npm run dev:webhook",
+    "ngrok": "node scripts/ngrok.mjs",
+    "whatsapp:simulate": "cd server && npm run whatsapp:simulate --",
     "seed": "cd server && npm run seed",
     "seed:pages": "cd server && node seedPages.js"
   },
   "devDependencies": {
+    "@ngrok/ngrok": "^1.4.1",
     "concurrently": "^8.2.2",
     "shadcn": "^4.2.0"
   },

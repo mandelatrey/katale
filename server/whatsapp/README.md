@@ -43,18 +43,23 @@ ownership rules (once enforced — see `docs/auth-model.md`).
 
 ## Running locally
 
-The webhook is mounted inside the main Express server. For iteration
-you can boot a second instance on a different port so the web app
-(on :3001) and the webhook (on :3002) can run side by side, pointed at
-the same Mongo:
+`npm run dev` at the repo root boots everything in one shot:
 
-```
-# terminal 1 — web API on :3001
-npm run dev
+| process | port | notes                                               |
+| ------- | ---- | --------------------------------------------------- |
+| api     | 3001 | main Express server (also mounts the webhook)       |
+| web     | 5173 | Vite client                                         |
+| wa      | 3002 | second Express instance running only the webhook    |
+| ngrok   | —    | public tunnel → http://localhost:3002 (if token set)|
 
-# terminal 2 — webhook on :3002 (point ngrok / Twilio here)
-npm run dev:webhook
-```
+The ngrok process prints the public webhook URL at startup — drop it
+into Twilio's sandbox "When a message comes in" field (method `POST`)
+or into the Meta Cloud API callback URL. With no `NGROK_AUTHTOKEN`
+set, ngrok is skipped and the rest of `npm run dev` keeps working;
+you can still exercise the pipeline locally via the simulator below.
+
+If you only need the web app, run `npm run dev:api-only` to skip the
+webhook + tunnel.
 
 Health check:
 
@@ -62,10 +67,19 @@ Health check:
 curl http://localhost:3002/api/whatsapp/health
 ```
 
+Simulate an inbound message without leaving the machine:
+
+```
+npm run whatsapp:simulate "price of maize" --from +256700000001 --provider twilio
+```
+
 ## Env vars (to add when wiring providers)
 
 | var                      | used by | notes                                         |
 | ------------------------ | ------- | --------------------------------------------- |
+| `WHATSAPP_WEBHOOK_PORT`  | dev     | defaults to 3002; ngrok reads the same value  |
+| `NGROK_AUTHTOKEN`        | dev     | required to open the tunnel; skipped if blank |
+| `NGROK_DOMAIN`           | dev     | optional fixed subdomain (paid plans)         |
 | `TWILIO_ACCOUNT_SID`     | twilio  | basic auth for the outbound send              |
 | `TWILIO_AUTH_TOKEN`      | twilio  | same                                          |
 | `TWILIO_WHATSAPP_FROM`   | twilio  | sandbox number, E.164                         |
