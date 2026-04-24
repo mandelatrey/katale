@@ -16,7 +16,7 @@ import { route } from "./router.js";
 import { getSessionStore } from "./sessions.js";
 import { formatReply } from "./formatter.js";
 import { providerFromRequest } from "./providers/index.js";
-import { runAgent } from "../ai/agent.js";
+import { runAgent } from "../ai/index.js";
 
 // When WHATSAPP_AI_MIDDLEWARE=1 (and ANTHROPIC_API_KEY is set), inbound
 // messages go through the LLM agent in ../ai/agent.js instead of the

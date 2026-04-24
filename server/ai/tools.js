@@ -1,8 +1,11 @@
 // Tool surface for the WhatsApp AI middleware.
 //
 // Each entry has:
-//   definition: Anthropic tool schema (name, description, input_schema)
+//   definition: tool schema in Anthropic format (name, description, input_schema)
 //   handler:    async (input, ctx) => any
+//
+// Gemini-compatible declarations are derived automatically via
+// toGeminiSchema() and exported as geminiToolDeclarations.
 //
 // `ctx` matches the agent's call context: { actor, user, message, session }.
 // Handlers translate between the LLM's tool inputs and the existing
@@ -556,6 +559,48 @@ const TOOLS = [
 ];
 
 export const toolDefinitions = TOOLS.map((t) => t.definition);
+
+// Gemini uses uppercase type names and a subset of JSON Schema fields.
+const GEMINI_TYPE = {
+  string: "STRING",
+  integer: "INTEGER",
+  number: "NUMBER",
+  boolean: "BOOLEAN",
+  array: "ARRAY",
+  object: "OBJECT",
+};
+
+function toGeminiSchema(schema) {
+  if (!schema || typeof schema !== "object") return undefined;
+  const out = {};
+  if (schema.type) out.type = GEMINI_TYPE[schema.type] ?? schema.type.toUpperCase();
+  if (schema.description) out.description = schema.description;
+  if (schema.enum) out.enum = schema.enum;
+  if (schema.required?.length) out.required = schema.required;
+  if (schema.items) out.items = toGeminiSchema(schema.items);
+  if (schema.properties) {
+    const entries = Object.entries(schema.properties);
+    if (entries.length > 0) {
+      out.properties = Object.fromEntries(
+        entries.map(([k, v]) => [k, toGeminiSchema(v)]),
+      );
+    }
+  }
+  return out;
+}
+
+// Single Tool object expected by the Gemini SDK (one functionDeclarations array).
+export const geminiToolDeclarations = [
+  {
+    functionDeclarations: TOOLS.map((t) => {
+      const decl = { name: t.definition.name, description: t.definition.description };
+      const params = toGeminiSchema(t.definition.input_schema);
+      // Only attach parameters when there are actual properties to describe.
+      if (params?.properties || params?.required) decl.parameters = params;
+      return decl;
+    }),
+  },
+];
 
 const handlerMap = Object.fromEntries(
   TOOLS.map((t) => [t.definition.name, t.handler]),
