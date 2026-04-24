@@ -19,9 +19,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import { toolDefinitions, executeTool } from "./tools.js";
 import { buildSystemPrompt } from "./systemPrompt.js";
 
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-7";
+// claude-sonnet-4-6 has much higher token-rate limits than opus; suitable
+// for WhatsApp turnaround (replies are capped at 1 500 chars anyway).
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 const MAX_ITERATIONS = Number(process.env.WHATSAPP_AI_MAX_ITERATIONS || 8);
-const MAX_TOKENS = Number(process.env.WHATSAPP_AI_MAX_TOKENS || 16000);
+// 4 096 tokens is plenty for WhatsApp replies and keeps us well under the
+// per-minute token quota that triggers 429s on higher-token models.
+const MAX_TOKENS = Number(process.env.WHATSAPP_AI_MAX_TOKENS || 4096);
 const HISTORY_TURNS = Number(process.env.WHATSAPP_AI_HISTORY_TURNS || 6);
 const TOOL_RESULT_CHAR_CAP = 16000;
 
@@ -33,9 +37,34 @@ function getClient() {
         "ANTHROPIC_API_KEY is not set — required for the WhatsApp AI middleware.",
       );
     }
-    cachedClient = new Anthropic();
+    // maxRetries lets the SDK handle transient errors (429, 529, 5xx) with
+    // its built-in exponential backoff before surfacing an exception.
+    cachedClient = new Anthropic({ maxRetries: 4 });
   }
   return cachedClient;
+}
+
+// Extra safety net on top of the SDK's built-in retry: if a 429 still
+// escapes (e.g. after SDK exhausts its own attempts), back off and retry
+// up to maxAttempts times before giving up.
+async function callWithBackoff(fn, maxAttempts = 3) {
+  let delay = 2000;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const isRateLimit =
+        err?.status === 429 ||
+        err?.name === "RateLimitError" ||
+        err?.error?.type === "rate_limit_error";
+      if (!isRateLimit || attempt === maxAttempts) throw err;
+      console.warn(
+        `[whatsapp-ai] rate limit (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms`,
+      );
+      await new Promise((r) => setTimeout(r, delay));
+      delay *= 2;
+    }
+  }
 }
 
 /**
@@ -66,13 +95,15 @@ export async function runAgent(ctx) {
   let stoppedCleanly = false;
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system,
-      tools: toolDefinitions,
-      messages,
-    });
+    const response = await callWithBackoff(() =>
+      client.messages.create({
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        system,
+        tools: toolDefinitions,
+        messages,
+      }),
+    );
 
     if (response.stop_reason === "tool_use") {
       messages.push({ role: "assistant", content: response.content });
