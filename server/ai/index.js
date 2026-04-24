@@ -6,12 +6,13 @@
 // which one is active.
 //
 // Configuration:
-//   WHATSAPP_AI_PROVIDER=anthropic|gemini
-//     Explicit override. When omitted the router auto-detects from which API
-//     key is present: GEMINI_API_KEY → gemini, ANTHROPIC_API_KEY → anthropic.
+//   WHATSAPP_AI_PROVIDER=gemini|anthropic
+//     Explicit override. When omitted the router auto-detects:
+//       GEMINI_API_KEY set    → gemini   (default)
+//       ANTHROPIC_API_KEY set → anthropic
 //
-//   ANTHROPIC_API_KEY / ANTHROPIC_MODEL  — Anthropic Claude settings
 //   GEMINI_API_KEY    / GEMINI_MODEL     — Google Gemini settings
+//   ANTHROPIC_API_KEY / ANTHROPIC_MODEL  — Anthropic Claude settings
 //
 // To switch providers at runtime, change WHATSAPP_AI_PROVIDER (or swap which
 // API key is defined) and restart the server — no code change required.
@@ -25,8 +26,8 @@ function resolveProvider() {
   // Auto-detect from whichever key is set.
   if (process.env.GEMINI_API_KEY) return "gemini";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
-  // Default — will surface a missing-key error at call time.
-  return "anthropic";
+  // Default to gemini — will surface a missing-key error at call time.
+  return "gemini";
 }
 
 export function runAgent(ctx) {
