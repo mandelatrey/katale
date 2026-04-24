@@ -18,15 +18,13 @@ import { formatReply } from "./formatter.js";
 import { providerFromRequest } from "./providers/index.js";
 import { runAgent } from "../ai/index.js";
 
-// When WHATSAPP_AI_MIDDLEWARE=1 (and ANTHROPIC_API_KEY is set), inbound
-// messages go through the LLM agent in ../ai/agent.js instead of the
-// keyword router below. The agent decides which DB tools to call and
-// composes the reply itself. If the agent throws we fall back to the
-// legacy router so a bad model call never bricks the webhook.
+// When WHATSAPP_AI_MIDDLEWARE=1 the LLM agent handles inbound messages.
+// Accepts either GEMINI_API_KEY (default provider) or ANTHROPIC_API_KEY.
+// Falls back to the legacy keyword router if the agent throws.
 function aiEnabled() {
   return (
     process.env.WHATSAPP_AI_MIDDLEWARE === "1" &&
-    !!process.env.ANTHROPIC_API_KEY
+    !!(process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY)
   );
 }
 
