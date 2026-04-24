@@ -40,6 +40,20 @@ ownership rules (once enforced — see `docs/auth-model.md`).
 | `providers/index.js`     | pick twilio vs meta based on request shape                  |
 | `providers/twilio.js`    | Twilio sandbox adapter — **stub**                           |
 | `providers/meta.js`      | Meta Cloud API adapter — **stub**                           |
+| `../ai/agent.js`         | LLM tool-use loop (replaces router when `WHATSAPP_AI_MIDDLEWARE=1`) |
+| `../ai/tools.js`         | DB operations exposed as tools to the LLM                   |
+| `../ai/systemPrompt.js`  | per-request system prompt (embeds sender identity)          |
+
+## AI middleware
+
+Set `WHATSAPP_AI_MIDDLEWARE=1` and `ANTHROPIC_API_KEY=...` and the
+webhook routes inbound text through `../ai/agent.js` instead of the
+keyword router. The agent calls Claude with the `server/services/*`
+functions exposed as tools, loops on tool calls until it has what it
+needs, then composes the WhatsApp reply directly. Multi-turn context
+(last `WHATSAPP_AI_HISTORY_TURNS` exchanges) is persisted on the
+session by phone. If the agent throws, the webhook silently falls back
+to the keyword router so a flaky LLM call never bricks delivery.
 
 ## Running locally
 
@@ -87,6 +101,11 @@ npm run whatsapp:simulate "price of maize" --from +256700000001 --provider twili
 | `META_PHONE_NUMBER_ID`   | meta    | number to send from                           |
 | `META_VERIFY_TOKEN`      | meta    | echoed on GET /webhook challenge              |
 | `META_APP_SECRET`        | meta    | for X-Hub-Signature-256 validation            |
+| `WHATSAPP_AI_MIDDLEWARE` | ai      | set to `1` to route inbound messages through the LLM agent (`server/ai/`) instead of the keyword router |
+| `ANTHROPIC_API_KEY`      | ai      | required when the AI middleware is on         |
+| `ANTHROPIC_MODEL`        | ai      | optional override (default `claude-opus-4-7`) |
+| `WHATSAPP_AI_MAX_ITERATIONS` | ai  | optional cap on tool-call rounds per message (default 8) |
+| `WHATSAPP_AI_HISTORY_TURNS`  | ai  | optional rolling history depth per phone (default 6 turns) |
 
 `.env` is already loaded by `server/index.js` via `dotenv/config`.
 
