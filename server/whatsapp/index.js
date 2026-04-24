@@ -18,13 +18,13 @@ import { formatReply } from "./formatter.js";
 import { providerFromRequest } from "./providers/index.js";
 import { runAgent } from "../ai/index.js";
 
-// When WHATSAPP_AI_MIDDLEWARE=1 the LLM agent handles inbound messages.
-// Accepts either GEMINI_API_KEY (default provider) or ANTHROPIC_API_KEY.
-// Falls back to the legacy keyword router if the agent throws.
+// When WHATSAPP_AI_MIDDLEWARE=1 and GEMINI_API_KEY is set, inbound messages
+// go through the Gemini agent instead of the legacy keyword router.
+// Falls back to the legacy router if the agent throws.
 function aiEnabled() {
   return (
     process.env.WHATSAPP_AI_MIDDLEWARE === "1" &&
-    !!(process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY)
+    !!process.env.GEMINI_API_KEY
   );
 }
 
