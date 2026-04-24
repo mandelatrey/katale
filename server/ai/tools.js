@@ -5,39 +5,32 @@
 //   handler:    async (input, ctx) => any
 //
 // `ctx` matches the agent's call context: { actor, user, message, session }.
-// Handlers translate between the LLM's tool inputs and the existing
-// server/services/* functions, which are already Zod-validated and
-// actor-aware. Handlers are also where we apply WhatsApp-specific
-// authorization (e.g. update_carrier_status only touches the sender's
-// linked carrier).
+// Handlers translate between the LLM's tool inputs and the MCP resource layer
+// (server/mcp.js), which provides a unified interface to all service functions.
+// Handlers are also where we apply WhatsApp-specific authorization (e.g.
+// update_carrier_status only touches the sender's linked carrier).
 
 import {
-  listLatestPrices,
+  getLatestPrices,
   getPriceHistory,
   comparePrices,
-  getTransportEstimate,
-} from "../services/commodities.js";
-import {
-  listMarkets,
-  listNearbyMarkets,
+  getTransportPrice,
+  getMarkets,
+  getNearbyMarkets,
   getMarketById,
-} from "../services/markets.js";
-import { listPayments } from "../services/payments.js";
-import {
-  listCarriers,
-  updateCarrier,
+  getPayments,
+  getCarriers,
   getCarrierById,
-} from "../services/carriers.js";
-import { listAssets } from "../services/assets.js";
-import {
-  listTransactions,
-  updateTransaction,
+  updateCarrier,
+  getAssets,
+  getTransactions,
   getTransactionById,
   createTransaction,
-} from "../services/transactions.js";
-import { listStatements } from "../services/statements.js";
-import { listReports } from "../services/reports.js";
-import { listInsights } from "../services/insights.js";
+  updateTransaction,
+  getInsights,
+  getStatements,
+  getReports,
+} from "../mcp.js";
 
 const OBJECT_ID_PATTERN = "^[a-fA-F0-9]{24}$";
 
@@ -74,7 +67,7 @@ const TOOLS = [
       },
     },
     handler: (input, ctx) =>
-      listLatestPrices(
+      getLatestPrices(
         { commodity: input.commodity, marketId: input.market_id },
         ctx.actor,
       ),
@@ -144,7 +137,7 @@ const TOOLS = [
       },
     },
     handler: (input, ctx) =>
-      getTransportEstimate(
+      getTransportPrice(
         { fromId: input.from_market_id, toId: input.to_market_id },
         ctx.actor,
       ),
@@ -168,7 +161,7 @@ const TOOLS = [
       },
     },
     handler: (input, ctx) =>
-      listMarkets(
+      getMarkets(
         {
           region: input.region,
           district: input.district,
@@ -199,7 +192,7 @@ const TOOLS = [
       },
     },
     handler: (input, ctx) =>
-      listNearbyMarkets(
+      getNearbyMarkets(
         {
           lat: input.lat,
           lng: input.lng,
@@ -246,7 +239,7 @@ const TOOLS = [
       },
     },
     handler: (input, ctx) =>
-      listPayments(
+      getPayments(
         {
           status: input.status,
           method: input.method,
@@ -277,7 +270,7 @@ const TOOLS = [
       },
     },
     handler: (input, ctx) =>
-      listCarriers(
+      getCarriers(
         {
           search: input.search,
           category: input.category,
@@ -354,7 +347,7 @@ const TOOLS = [
       },
     },
     handler: (input, ctx) =>
-      listAssets(
+      getAssets(
         {
           type: input.type,
           status: input.status,
@@ -389,7 +382,7 @@ const TOOLS = [
       },
     },
     handler: (input, ctx) =>
-      listTransactions(
+      getTransactions(
         {
           commodity: input.commodity,
           status: input.status,
@@ -508,7 +501,7 @@ const TOOLS = [
       },
     },
     handler: (input, ctx) =>
-      listStatements({ limit: input.limit ?? 5 }, ctx.actor),
+      getStatements({ limit: input.limit ?? 5 }, ctx.actor),
   },
 
   {
@@ -534,7 +527,7 @@ const TOOLS = [
       },
     },
     handler: (input, ctx) =>
-      listReports(
+      getReports(
         {
           type: input.type,
           region: input.region,
@@ -551,7 +544,7 @@ const TOOLS = [
         "List short market insight cards used on the dashboard. Useful for 'what's happening in the market'.",
       input_schema: { type: "object", properties: {} },
     },
-    handler: (_input, ctx) => listInsights({}, ctx.actor),
+    handler: (_input, ctx) => getInsights({}, ctx.actor),
   },
 ];
 

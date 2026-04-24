@@ -12,6 +12,7 @@
 export function parseIntent(text, session) {
   const raw = (text ?? "").trim();
   const lower = raw.toLowerCase();
+  const commodity = detectCommodity(lower);
 
   // Session follow-ups take priority — the router previously asked a
   // question and this message is the answer.
@@ -29,8 +30,6 @@ export function parseIntent(text, session) {
 
   // Price check: "price", "prices", "price of maize", "prices for beans".
   if (/\bprices?\b/.test(lower)) {
-    const m = lower.match(/prices?\s+(?:of|for)\s+([a-z][a-z ]*?)\s*$/);
-    const commodity = m ? m[1].trim() : undefined;
     return { kind: "price_check", args: commodity ? { commodity } : {} };
   }
 
@@ -120,5 +119,30 @@ function parseCarrierStatus(lower) {
   if (/\bunloading\b/.test(lower)) return "UNLOADING";
   if (/\bwaiting\b/.test(lower)) return "WAITING";
   return null;
+}
+
+const KNOWN_COMMODITIES = [
+  "maize",
+  "beans",
+  "coffee",
+  "rice",
+  "matooke",
+  "groundnuts",
+  "cassava",
+  "sweet potatoes",
+  "sweet_potatoes",
+  "sorghum",
+];
+
+function detectCommodity(lower) {
+  const normalized = lower
+    .replace(/[^a-z\s_]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const direct = KNOWN_COMMODITIES.find((c) =>
+    new RegExp(`\\b${c.replace(/\s+/g, "\\s+")}\\b`).test(normalized),
+  );
+  if (!direct) return undefined;
+  return direct.replace(/\s+/g, "_");
 }
 

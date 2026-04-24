@@ -18,16 +18,31 @@ import { formatReply } from "./formatter.js";
 import { providerFromRequest } from "./providers/index.js";
 import { runAgent } from "../ai/agent.js";
 
-// When WHATSAPP_AI_MIDDLEWARE=1 (and ANTHROPIC_API_KEY is set), inbound
-// messages go through the LLM agent in ../ai/agent.js instead of the
-// keyword router below. The agent decides which DB tools to call and
+// When WHATSAPP_AI_MIDDLEWARE=1 and the selected provider has an API key,
+// inbound messages go through the LLM agent in ../ai/agent.js instead of
+// the keyword router below. The agent decides which DB tools to call and
 // composes the reply itself. If the agent throws we fall back to the
 // legacy router so a bad model call never bricks the webhook.
 function aiEnabled() {
-  return (
-    process.env.WHATSAPP_AI_MIDDLEWARE === "1" &&
-    !!process.env.ANTHROPIC_API_KEY
-  );
+  if (process.env.WHATSAPP_AI_MIDDLEWARE !== "1") return false;
+  const provider = (process.env.AI_PROVIDER || "anthropic").toLowerCase();
+  if (provider === "gemini") return !!process.env.GEMINI_API_KEY;
+  return !!process.env.ANTHROPIC_API_KEY;
+}
+
+function aiConfigStatus() {
+  if (process.env.WHATSAPP_AI_MIDDLEWARE !== "1") {
+    return "disabled (WHATSAPP_AI_MIDDLEWARE!=1)";
+  }
+  const provider = (process.env.AI_PROVIDER || "anthropic").toLowerCase();
+  if (provider === "gemini") {
+    return process.env.GEMINI_API_KEY
+      ? "enabled (gemini)"
+      : "disabled (missing GEMINI_API_KEY for gemini)";
+  }
+  return process.env.ANTHROPIC_API_KEY
+    ? "enabled (anthropic)"
+    : "disabled (missing ANTHROPIC_API_KEY for anthropic)";
 }
 
 const router = express.Router();
@@ -74,8 +89,10 @@ router.post("/webhook", async (req, res) => {
 
     let reply;
     let nextSession;
+    const aiOn = aiEnabled();
+    console.log(`[whatsapp] middleware path: ${aiOn ? "ai" : "legacy"} (${aiConfigStatus()})`);
 
-    if (aiEnabled()) {
+    if (aiOn) {
       try {
         const aiResult = await runAgent({ message, user, session, actor });
         reply = aiResult.reply;
