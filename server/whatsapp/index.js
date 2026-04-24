@@ -16,6 +16,19 @@ import { route } from "./router.js";
 import { getSessionStore } from "./sessions.js";
 import { formatReply } from "./formatter.js";
 import { providerFromRequest } from "./providers/index.js";
+import { runAgent } from "../ai/agent.js";
+
+// When WHATSAPP_AI_MIDDLEWARE=1 (and ANTHROPIC_API_KEY is set), inbound
+// messages go through the LLM agent in ../ai/agent.js instead of the
+// keyword router below. The agent decides which DB tools to call and
+// composes the reply itself. If the agent throws we fall back to the
+// legacy router so a bad model call never bricks the webhook.
+function aiEnabled() {
+  return (
+    process.env.WHATSAPP_AI_MIDDLEWARE === "1" &&
+    !!process.env.ANTHROPIC_API_KEY
+  );
+}
 
 const router = express.Router();
 
@@ -55,19 +68,34 @@ router.post("/webhook", async (req, res) => {
     const user = await User.findOne({ phoneE164: message.fromPhoneE164 });
     const sessions = getSessionStore();
     const session = await sessions.load(message.fromPhoneE164);
+    const actor = user
+      ? { userId: user._id.toString(), source: "whatsapp" }
+      : { userId: null, source: "whatsapp" };
 
-    const actionResult = await route({
-      message,
-      user,
-      session,
-      actor: user
-        ? { userId: user._id.toString(), source: "whatsapp" }
-        : { userId: null, source: "whatsapp" },
-    });
+    let reply;
+    let nextSession;
 
-    await sessions.save(message.fromPhoneE164, actionResult.nextSession);
+    if (aiEnabled()) {
+      try {
+        const aiResult = await runAgent({ message, user, session, actor });
+        reply = aiResult.reply;
+        nextSession = aiResult.nextSession;
+      } catch (err) {
+        console.error(
+          "[whatsapp] AI middleware failed, falling back to legacy router:",
+          err,
+        );
+        const actionResult = await route({ message, user, session, actor });
+        reply = formatReply(actionResult);
+        nextSession = actionResult.nextSession;
+      }
+    } else {
+      const actionResult = await route({ message, user, session, actor });
+      reply = formatReply(actionResult);
+      nextSession = actionResult.nextSession;
+    }
 
-    const reply = formatReply(actionResult);
+    await sessions.save(message.fromPhoneE164, nextSession);
     await provider.sendOutbound({ to: message.fromPhoneE164, text: reply });
 
     // 200 ACK tells the provider the delivery succeeded. The actual user
