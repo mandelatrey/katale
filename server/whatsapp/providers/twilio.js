@@ -13,7 +13,7 @@ export const twilioProvider = {
    * @returns {Promise<{ fromPhoneE164: string, text: string, mediaUrls?: string[] } | null>}
    */
   async parseInbound(req) {
-    const body = req.body;
+    const body = req.body ?? {};
 
     // Twilio sends From as "whatsapp:+256700000001"
     const rawFrom = body.From;
