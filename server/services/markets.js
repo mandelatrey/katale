@@ -11,8 +11,19 @@ import {
 // Markets are read-only today. The WhatsApp "find markets near me" intent
 // will call listNearbyMarkets with a phone-resolved GPS coordinate.
 
+const VALID_REGIONS = ["Central", "Eastern", "Northern", "Western"];
+
+function normalizeRegion(region) {
+  if (!region) return region;
+  const stripped = region.replace(/\s+uganda$/i, "").trim();
+  return VALID_REGIONS.find((r) => r.toLowerCase() === stripped.toLowerCase()) ?? stripped;
+}
+
 export async function listMarkets(params = {}, _actor) {
-  const filter = parse(listMarketsSchema, params, "market filter");
+  const { name, region, ...rest } = parse(listMarketsSchema, params, "market filter");
+  const filter = { ...rest };
+  if (name) filter.name = { $regex: name, $options: "i" };
+  if (region) filter.region = normalizeRegion(region);
   return Market.find(filter);
 }
 

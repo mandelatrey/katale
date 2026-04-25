@@ -157,10 +157,14 @@ const TOOLS = [
     definition: {
       name: "list_markets",
       description:
-        "List markets, optionally filtered by region, district, or market type.",
+        "List markets, optionally filtered by name, region, district, or market type. Use `name` to search by market name (e.g. 'Nakasero'). Region accepts plain region names like 'Central' or 'Central Uganda'.",
       input_schema: {
         type: "object",
         properties: {
+          name: {
+            type: "string",
+            description: "Partial or full market name to search for, e.g. 'Nakasero'.",
+          },
           region: { type: "string" },
           district: { type: "string" },
           market_type: {
@@ -173,6 +177,7 @@ const TOOLS = [
     handler: (input, ctx) =>
       listMarkets(
         {
+          name: input.name,
           region: input.region,
           district: input.district,
           marketType: input.market_type,
