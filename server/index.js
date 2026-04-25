@@ -38,7 +38,12 @@ app.use("/api/fleet", fleetRoutes);
 app.use("/api/intelligence", intelligenceRoutes);
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date() });
+  const dbState = ["disconnected", "connected", "connecting", "disconnecting"];
+  res.json({
+    status: "ok",
+    db: dbState[mongoose.connection.readyState] ?? "unknown",
+    timestamp: new Date(),
+  });
 });
 
 function startServer(port) {
@@ -48,6 +53,7 @@ function startServer(port) {
   }
 
   const server = app.listen(port, () => {
+    console.log(`[api] Server listening on port ${port}`);
   });
   server.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
@@ -60,20 +66,36 @@ function startServer(port) {
   });
 }
 
+// Start the HTTP server immediately — it does not need MongoDB to accept
+// requests. DB-dependent routes will return errors until the connection
+// is established. Mongoose retries the connection automatically.
+startServer(PORT);
+
 mongoose
   .connect(MONGODB_URI, {
     maxPoolSize: 10,
     minPoolSize: 2,
     connectTimeoutMS: 10000,
     socketTimeoutMS: 45000,
+    serverSelectionTimeoutMS: 30000,
   })
   .then(() => {
-    startServer(PORT);
+    console.log("[api] MongoDB connected to", MONGODB_URI.replace(/\/\/.*@/, "//***@"));
   })
   .catch((err) => {
-    console.error("CRITICAL: MongoDB connection error:", err.message);
-    console.error("The server requires a running MongoDB instance to start.");
-    process.exit(1); // Exit with error code to notify concurrently/watchers
+    console.error("[api] MongoDB initial connection failed:", err.message);
+    console.error(
+      "[api] Set MONGODB_URI in server/.env to connect. Retrying in the background…",
+    );
+    // Do not exit — mongoose will keep retrying on subsequent requests
+    // once a MongoDB instance becomes reachable.
   });
+
+mongoose.connection.on("connected", () =>
+  console.log("[api] MongoDB reconnected"),
+);
+mongoose.connection.on("disconnected", () =>
+  console.warn("[api] MongoDB disconnected — waiting for reconnection"),
+);
 
 export default app;
