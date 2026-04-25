@@ -32,4 +32,5 @@ server/.env
 
 .env
 .env.*
-!.env.exampleserver/.env
+!.env.example
+server/.env
