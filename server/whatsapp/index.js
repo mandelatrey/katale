@@ -79,9 +79,12 @@ router.post("/webhook", async (req, res) => {
         reply = aiResult.reply;
         nextSession = aiResult.nextSession;
       } catch (err) {
+        const cause = err?.cause;
+        const detail = cause
+          ? `${cause.code ?? cause.constructor?.name}: ${cause.message ?? cause}`
+          : err?.message ?? String(err);
         console.error(
-          "[whatsapp] AI middleware failed, falling back to legacy router:",
-          err,
+          `[whatsapp] AI middleware failed (${detail}), falling back to legacy router`,
         );
         const actionResult = await route({ message, user, session, actor });
         reply = formatReply(actionResult);

@@ -53,7 +53,7 @@ function startServer(port) {
   }
 
   const server = app.listen(port, () => {
-    console.log(`[api] Server listening on port ${port}`);
+    console.log(`Server listening on port ${port}`);
   });
   server.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
@@ -80,22 +80,22 @@ mongoose
     serverSelectionTimeoutMS: 30000,
   })
   .then(() => {
-    console.log("[api] MongoDB connected to", MONGODB_URI.replace(/\/\/.*@/, "//***@"));
+    console.log("[mongo] MongoDB connected to", MONGODB_URI.replace(/\/\/.*@/, "//***@"));
   })
   .catch((err) => {
-    console.error("[api] MongoDB initial connection failed:", err.message);
+    console.error("[mongo] MongoDB initial connection failed:", err.message);
     console.error(
-      "[api] Set MONGODB_URI in server/.env to connect. Retrying in the background…",
+      "[mongo] Set MONGODB_URI in server/.env to connect. Retrying in the background…",
     );
     // Do not exit — mongoose will keep retrying on subsequent requests
     // once a MongoDB instance becomes reachable.
   });
 
 mongoose.connection.on("connected", () =>
-  console.log("[api] MongoDB reconnected"),
+  console.log("[mongo] MongoDB reconnected"),
 );
 mongoose.connection.on("disconnected", () =>
-  console.warn("[api] MongoDB disconnected — waiting for reconnection"),
+  console.warn("[mongo] MongoDB disconnected — waiting for reconnection"),
 );
 
 export default app;
