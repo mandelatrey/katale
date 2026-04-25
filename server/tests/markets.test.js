@@ -17,6 +17,48 @@ describe("markets service", () => {
     expect(list[0].name).toBe("Nakasero");
   });
 
+  it("listMarkets filters by name (case-insensitive partial match)", async (ctx) => {
+    if (!hasMongo()) return ctx.skip();
+    await Market.create([
+      {
+        name: "Nakasero Market",
+        region: "Central",
+        district: "Kampala",
+        location: { type: "Point", coordinates: [32.58, 0.31] },
+      },
+      {
+        name: "Owino Market",
+        region: "Central",
+        district: "Kampala",
+        location: { type: "Point", coordinates: [32.57, 0.31] },
+      },
+    ]);
+    const results = await listMarkets({ name: "nakasero" }, null);
+    expect(results).toHaveLength(1);
+    expect(results[0].name).toBe("Nakasero Market");
+  });
+
+  it("listMarkets normalises 'Central Uganda' to 'Central'", async (ctx) => {
+    if (!hasMongo()) return ctx.skip();
+    await Market.create([
+      {
+        name: "Nakasero Market",
+        region: "Central",
+        district: "Kampala",
+        location: { type: "Point", coordinates: [32.58, 0.31] },
+      },
+      {
+        name: "Gulu Market",
+        region: "Northern",
+        district: "Gulu",
+        location: { type: "Point", coordinates: [32.29, 2.77] },
+      },
+    ]);
+    const results = await listMarkets({ region: "Central Uganda" }, null);
+    expect(results).toHaveLength(1);
+    expect(results[0].name).toBe("Nakasero Market");
+  });
+
   it("listNearbyMarkets returns markets within radius", async (ctx) => {
     if (!hasMongo()) return ctx.skip();
     await Market.init();

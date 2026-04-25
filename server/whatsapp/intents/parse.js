@@ -135,12 +135,10 @@ function parseCoords(text) {
   return null;
 }
 
-// Returns a lowercase slug so downstream comparisons are case-insensitive
-// by construction and consistent with all other intent args.
 function parseCarrierStatus(lower) {
-  if (/\bon\s+the\s+way\b/.test(lower)) return "on_the_way";
-  if (/\bloading\b/.test(lower)) return "loading";
-  if (/\bunloading\b/.test(lower)) return "unloading";
-  if (/\bwaiting\b/.test(lower)) return "waiting";
+  if (/\bon\s+the\s+way\b/.test(lower)) return "ON THE WAY";
+  if (/\bunloading\b/.test(lower)) return "UNLOADING";
+  if (/\bloading\b/.test(lower)) return "LOADING";
+  if (/\bwaiting\b/.test(lower)) return "WAITING";
   return null;
 }

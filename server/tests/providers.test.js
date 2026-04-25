@@ -35,8 +35,14 @@ describe("providerFromRequest", () => {
     expect(providerFromRequest(fakeReq())).toBe(twilioProvider);
   });
 
-  it("stubs reject until implemented", async () => {
-    await expect(twilioProvider.parseInbound({})).rejects.toThrow(/not implemented/);
-    await expect(metaProvider.sendOutbound({})).rejects.toThrow(/not implemented/);
+  it("parseInbound returns null for unrecognised body shapes", async () => {
+    // empty body → no whatsapp: prefix → null (not a throw)
+    expect(await twilioProvider.parseInbound({})).toBeNull();
+    expect(await metaProvider.parseInbound({})).toBeNull();
+  });
+
+  it("sendOutbound throws when credentials are missing", async () => {
+    await expect(metaProvider.sendOutbound({ to: "+256700000001", text: "hi" }))
+      .rejects.toThrow(/not configured/);
   });
 });
