@@ -22,6 +22,7 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const MAX_ITERATIONS = Number(process.env.WHATSAPP_AI_MAX_ITERATIONS || 8);
 const MAX_TOKENS = Number(process.env.WHATSAPP_AI_MAX_TOKENS || 4096);
 const HISTORY_TURNS = Number(process.env.WHATSAPP_AI_HISTORY_TURNS || 6);
+const REQUEST_TIMEOUT_MS = Number(process.env.WHATSAPP_AI_TIMEOUT_MS || 25000);
 const TOOL_RESULT_CHAR_CAP = 16000;
 
 let cachedGenAI = null;
@@ -38,7 +39,8 @@ function getClient() {
 }
 
 // Gemini rate-limit errors surface as HTTP 429 or RESOURCE_EXHAUSTED gRPC
-// status. Back off and retry before giving up.
+// status. Network errors (TypeError: fetch failed) are retried on the same
+// schedule since they're usually transient.
 async function callWithBackoff(fn, maxAttempts = 3) {
   let delay = 2000;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -50,9 +52,15 @@ async function callWithBackoff(fn, maxAttempts = 3) {
         err?.status === "RESOURCE_EXHAUSTED" ||
         err?.message?.toLowerCase().includes("resource_exhausted") ||
         err?.message?.toLowerCase().includes("quota");
-      if (!isRateLimit || attempt === maxAttempts) throw err;
+      const isNetworkError = err instanceof TypeError && err.message === "fetch failed";
+      const shouldRetry = isRateLimit || isNetworkError;
+
+      if (!shouldRetry || attempt === maxAttempts) throw err;
+
+      const reason = isRateLimit ? "rate limit" : "network error";
       console.warn(
-        `[whatsapp-ai/gemini] rate limit (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms`,
+        `[whatsapp-ai/gemini] ${reason} (attempt ${attempt}/${maxAttempts}), retrying in ${delay}ms`,
+        isNetworkError ? `cause: ${err.cause?.code ?? err.cause?.message ?? "unknown"}` : "",
       );
       await new Promise((r) => setTimeout(r, delay));
       delay *= 2;
@@ -75,12 +83,15 @@ export async function runAgent(ctx) {
     parts: [{ text: h.text }],
   }));
 
-  const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
-    systemInstruction: buildSystemPrompt(ctx),
-    tools: geminiToolDeclarations,
-    generationConfig: { maxOutputTokens: MAX_TOKENS },
-  });
+  const model = genAI.getGenerativeModel(
+    {
+      model: GEMINI_MODEL,
+      systemInstruction: buildSystemPrompt(ctx),
+      tools: geminiToolDeclarations,
+      generationConfig: { maxOutputTokens: MAX_TOKENS },
+    },
+    { timeout: REQUEST_TIMEOUT_MS },
+  );
 
   const chat = model.startChat({ history: geminiHistory });
 
