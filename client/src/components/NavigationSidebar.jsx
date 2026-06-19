@@ -58,18 +58,18 @@ export default function NavigationSidebar({ onNavigate }) {
             <img
               src="/assets/agribridge-logo-white.svg"
               alt="Agribridge"
-              style={{ height: 30, width: 'auto', marginRight: 'auto' }}
+              style={{ height: 30, width: 'auto', marginRight: 'auto', filter: 'brightness(0) saturate(100%) opacity(0.75)' }}
             />
             <button
               onClick={toggleSidebar}
               title="Collapse sidebar"
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: 'rgba(255,255,255,0.3)', padding: 4, borderRadius: 6,
+                color: 'rgba(20,30,20,0.35)', padding: 4, borderRadius: 6,
                 display: 'flex', alignItems: 'center', transition: 'color 0.15s',
               }}
-              onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
+              onMouseEnter={e => e.currentTarget.style.color = 'rgba(20,30,20,0.75)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(20,30,20,0.35)'}
             >
               <ChevronDown style={{ width: 13, height: 13, transform: 'rotate(90deg)' }} />
             </button>
@@ -82,11 +82,11 @@ export default function NavigationSidebar({ onNavigate }) {
               title="Expand sidebar"
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: 'rgba(255,255,255,0.3)', padding: 4, borderRadius: 6,
+                color: 'rgba(20,30,20,0.35)', padding: 4, borderRadius: 6,
                 display: 'flex', alignItems: 'center', transition: 'color 0.15s',
               }}
-              onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
+              onMouseEnter={e => e.currentTarget.style.color = 'rgba(20,30,20,0.75)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(20,30,20,0.35)'}
             >
               <ChevronRight style={{ width: 13, height: 13 }} />
             </button>
@@ -145,7 +145,7 @@ export default function NavigationSidebar({ onNavigate }) {
         <div style={{
           display: 'flex', alignItems: 'center',
           padding: '10px 12px',
-          borderTop: '1px solid rgba(255,255,255,0.05)',
+          borderTop: '1px solid rgba(0,0,0,0.08)',
           gap: 10,
         }}>
           <div style={{
@@ -159,12 +159,12 @@ export default function NavigationSidebar({ onNavigate }) {
           {open && (
             <>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', lineHeight: 1.3 }}>Ismail M.</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', lineHeight: 1.3 }}>Broker</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#0c2211', lineHeight: 1.3 }}>Ismail M.</div>
+                <div style={{ fontSize: 10, color: 'rgba(20,30,20,0.5)', lineHeight: 1.3 }}>Broker</div>
               </div>
               <LogOut
                 className="h-4 w-4"
-                style={{ color: 'rgba(255,255,255,0.3)', cursor: 'pointer', flexShrink: 0 }}
+                style={{ color: 'rgba(20,30,20,0.35)', cursor: 'pointer', flexShrink: 0 }}
               />
             </>
           )}
