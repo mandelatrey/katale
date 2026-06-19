@@ -314,6 +314,22 @@ body {
   margin: 0 auto;
 }
 
+/* Sidebar nav tooltips — comfortable padding, clean type */
+[data-slot="tooltip-content"] {
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  border-radius: 8px;
+  background-color: #111827;
+  color: #f9fafb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+[data-slot="tooltip-content"] svg {
+  fill: #111827;
+}
 
 /* ─── Inner Context Sidebar ──────────────────────────────────────────────── */
 .sidebar {
