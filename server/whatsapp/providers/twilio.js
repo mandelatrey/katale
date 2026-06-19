@@ -1,9 +1,5 @@
 // Twilio WhatsApp provider.
-//
-// Env vars required:
-//   TWILIO_ACCOUNT_SID   - Twilio account SID
-//   TWILIO_AUTH_TOKEN    - Twilio auth token
-//   TWILIO_WHATSAPP_FROM - Your Twilio WhatsApp number (e.g. +14155238886)
+ 
 
 export const twilioProvider = {
   /**
@@ -12,10 +8,10 @@ export const twilioProvider = {
    * @param {import("express").Request} req
    * @returns {Promise<{ fromPhoneE164: string, text: string, mediaUrls?: string[] } | null>}
    */
+  
   async parseInbound(req) {
     const body = req.body ?? {};
 
-    // Twilio sends From as "whatsapp:+256700000001"
     const rawFrom = body.From;
     if (!rawFrom || !rawFrom.startsWith("whatsapp:")) {
       return null;

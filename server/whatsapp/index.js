@@ -5,10 +5,6 @@
 //   - router.js                     — intent → service action mapping
 //   - sessions.js                   — multi-turn conversation state
 //   - formatter.js                  — service result → WhatsApp text
-//
-// Today every handler returns 501 Not Implemented. The next session
-// replaces these bodies with real logic; the API layer they call into
-// (server/services/*) is ready.
 
 import express from "express";
 import User from "../models/User.js";
@@ -18,9 +14,7 @@ import { formatReply } from "./formatter.js";
 import { providerFromRequest } from "./providers/index.js";
 import { runAgent } from "../ai/index.js";
 
-// When WHATSAPP_AI_MIDDLEWARE=1 and GEMINI_API_KEY is set, inbound messages
-// go through the Gemini agent instead of the legacy keyword router.
-// Falls back to the legacy router if the agent throws.
+// checks if the AI & Whatsapp middleware is enabled in env file.
 function aiEnabled() {
   return (
     process.env.WHATSAPP_AI_MIDDLEWARE === "1" &&
@@ -30,12 +24,15 @@ function aiEnabled() {
 
 const router = express.Router();
 
-// Health check — useful for Twilio/Meta "is the webhook up" pings.
+// Check whether the server is running.
 router.get("/health", (_req, res) => {
-  res.json({ status: "ok", webhook: "whatsapp", implemented: false });
+  res.json({ 
+    status: "ok", 
+    webhook: "whatsapp", 
+    implemented: false });
 });
 
-// Provider verification challenge (Meta Cloud API uses GET for this).
+// Verifying Whatsapp token.
 router.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -51,9 +48,7 @@ router.get("/webhook", (req, res) => {
 });
 
 // Main inbound webhook. Accepts messages from Twilio or Meta; the provider
-// adapter normalises the payload. We keep the route below as a thin
-// orchestrator so the actual plumbing (provider → session → router →
-// service → formatter → provider.send) is visible at a glance.
+// adapter normalises the payload.
 router.post("/webhook", async (req, res) => {
   try {
     const provider = providerFromRequest(req);

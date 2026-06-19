@@ -1,9 +1,7 @@
 // Service result → WhatsApp reply.
 //
 // Router returns a structured `result`; this file turns it into the
-// plain-text body the provider will send. Keeping formatting here (and
-// not in the router) means the router stays usable from other surfaces
-// — e.g. a future SMS fallback or a CLI simulator.
+// plain-text body the provider will send. 
 
 const HELP_BODY = [
   "Agribridge commands:",
@@ -47,10 +45,10 @@ export function formatReply(result) {
       return formatPrices(result.commodity, result.prices);
 
     case "nearby_markets":
-      return formatMarkets(result.markets);
+      return formatNearbyMarkets(result.markets);
 
     case "list_pending_payments":
-      return formatPayments(result.payments);
+      return formatPendingPayments(result.payments);
 
     case "list_my_carriers":
       return formatCarriers(result.carriers);
@@ -59,10 +57,10 @@ export function formatReply(result) {
       return `Carrier ${result.carrier?.name ?? ""} is now ${result.carrier?.status ?? "updated"}.`.trim();
 
     case "list_my_assets":
-      return formatAssets(result.assets);
+      return formatUserAssets(result.assets);
 
     case "latest_statement":
-      return formatStatement(result.statement);
+      return formatUserStatement(result.statement);
 
     case "cancel_transaction":
       return `Transaction ${result.transaction?.transactionId ?? ""} cancelled.`.trim();
@@ -79,55 +77,67 @@ function formatPrices(commodity, prices) {
   if (!prices?.length) {
     return `No recent prices found for ${commodity}.`;
   }
-  const top = prices.slice(0, 5).map((p) => {
-    const market = p.marketInfo?.name ?? "Unknown";
-    const district = p.marketInfo?.district ? `, ${p.marketInfo.district}` : "";
-    return `• ${market}${district}: ${fmtMoney(p.price, p.currency)} / ${p.unit} (${p.priceType})`;
-  });
-  const header = `Latest ${commodity} prices:`;
+
+  const top = prices.slice(0, 5).map(
+    (p) => {
+      const market = p.marketInfo?.name ?? "Unknown";
+      const district = p.marketInfo?.district ? `, ${p.marketInfo.district}` : "";
+      return `• ${market}${district}: ${fmtMoney(p.price, p.currency)} / ${p.unit} (${p.priceType})`;
+    }
+  );
+  const header = `Here are the latest price for ${commodity}:`;
   const footer = prices.length > 5 ? `\n…and ${prices.length - 5} more.` : "";
+
   return [header, ...top].join("\n") + footer;
 }
 
-function formatMarkets(markets) {
-  if (!markets?.length) return "No markets found nearby.";
+function formatNearbyMarkets(markets) {
+  if (!markets?.length) return "No markets found nearby. Check for another item?";
+
   const lines = markets.slice(0, 10).map((m) => {
     const tag = m.marketType ? ` [${m.marketType}]` : "";
     return `• ${m.name} — ${m.district}, ${m.region}${tag}`;
   });
-  return ["Markets near you:", ...lines].join("\n");
+
+  return ["These are the markets near you:", ...lines].join("\n");
 }
 
-function formatPayments(payments) {
+function formatPendingPayments(payments) {
   if (!payments?.length) return "You have no pending payments.";
+
   const lines = payments.map((p) => {
     const txn = p.transaction?.transactionId ?? p.paymentId;
     return `• ${txn}: ${fmtMoney(p.amount, p.currency)} via ${p.method}`;
   });
+
   return ["Pending payments:", ...lines].join("\n");
 }
 
 function formatCarriers(carriers) {
   if (!carriers?.length) return "No carriers registered.";
+
   const lines = carriers.slice(0, 10).map((c) => {
     const veh = c.vehicleModel ? ` (${c.vehicleModel})` : "";
     return `• ${c.name}${veh} — ${c.status}`;
   });
   const footer = carriers.length > 10 ? `\n…and ${carriers.length - 10} more.` : "";
-  return ["Your carriers:", ...lines].join("\n") + footer;
+
+  return ["Carriers available:", ...lines].join("\n") + footer;
 }
 
-function formatAssets(assets) {
+function formatUserAssets(assets) {
   if (!assets?.length) return "No assets registered.";
+
   const lines = assets.slice(0, 10).map((a) => {
     const loc = a.market?.name ? ` @ ${a.market.name}` : "";
     return `• ${a.name} [${a.type}]${loc} — ${a.status}`;
   });
   const footer = assets.length > 10 ? `\n…and ${assets.length - 10} more.` : "";
+
   return ["Your assets:", ...lines].join("\n") + footer;
 }
 
-function formatStatement(stmt) {
+function formatUserStatement(stmt) {
   if (!stmt) return "No statements available yet.";
   return [
     `Statement ${stmt.statementId} — ${stmt.period}`,

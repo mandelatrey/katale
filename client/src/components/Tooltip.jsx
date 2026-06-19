@@ -24,7 +24,7 @@ export default function Tooltip({ text, children }) {
             marginBottom: 6,
             backgroundColor: '#111827',
             color: '#f9fafb',
-            fontSize: 11,
+            fontSize: 15,
             lineHeight: 1.4,
             fontWeight: 400,
             padding: '5px 9px',
@@ -38,6 +38,7 @@ export default function Tooltip({ text, children }) {
             fontFamily: 'inherit',
             letterSpacing: 'normal',
             textTransform: 'none',
+            paddingInline: 10,
           }}
         >
           {text}

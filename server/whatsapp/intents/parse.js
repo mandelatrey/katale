@@ -13,6 +13,7 @@ const ESCAPE_RE = /^(help|menu|\?|commands?|start|cancel|stop)\b/;
  * @param {{ state: string, data: any } | null} session
  * @returns {{ kind: string, args?: Record<string, unknown> }}
  */
+
 export function parseIntent(text, session) {
   const raw = (text ?? "").trim();
   const lower = raw.toLowerCase();

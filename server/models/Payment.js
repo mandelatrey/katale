@@ -1,16 +1,31 @@
 import mongoose from "mongoose";
 
 const paymentSchema = new mongoose.Schema({
-  paymentId: { type: String, unique: true, required: true },
-  transaction: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
-  amount: { type: Number, required: true }, // UGX
-  currency: { type: String, default: "UGX" },
+  paymentId: {
+    type: String,
+    unique: true,
+    required: true
+  },
+  transaction: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Transaction"
+  },
+  amount: {
+    type: Number,
+    required: true
+  }, // UGX
+  currency: {
+    type: String,
+    default: "UGX"
+  },
   method: {
     type: String,
     enum: ["mobile_money", "bank_transfer", "cash", "cheque"],
     required: true,
   },
-  provider: { type: String }, // e.g. "MTN MoMo", "Airtel Money", "Stanbic Bank"
+  provider: { 
+    type: String 
+  },
   status: {
     type: String,
     enum: ["pending", "completed", "failed", "refunded"],
@@ -20,10 +35,16 @@ const paymentSchema = new mongoose.Schema({
   paidTo: { type: String },
   // Optional User refs — populated when the acting user is known
   // (web session or WhatsApp-resolved phone). See docs/auth-model.md.
-  paidByUser: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  paidToUser: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  reference: { type: String },
-  date: { type: Date, default: Date.now },
+  paidByUser: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "User" },
+  paidToUser: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "User" },
+  reference: { 
+    type: String 
+  },
+    date: { type: Date, default: Date.now },
 });
 
 paymentSchema.index({ transaction: 1 });

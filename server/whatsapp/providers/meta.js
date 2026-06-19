@@ -1,9 +1,4 @@
 // Meta Cloud API WhatsApp provider.
-//
-// Env vars required:
-//   META_ACCESS_TOKEN    - Permanent access token from Meta dashboard
-//   META_PHONE_NUMBER_ID - WhatsApp Business phone number ID
-//   META_VERIFY_TOKEN    - Webhook verification token (already configured)
 
 const GRAPH_API_VERSION = "v19.0";
 const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
@@ -34,7 +29,7 @@ export const metaProvider = {
     }
 
     const message = value.messages[0];
-    const fromPhone = message.from; // e.g. "256700000001" (no + prefix)
+    const fromPhone = message.from; 
     const fromPhoneE164 = fromPhone.startsWith("+") ? fromPhone : `+${fromPhone}`;
 
     // Handle different message types
@@ -45,7 +40,7 @@ export const metaProvider = {
       };
     }
 
-    // Handle media messages (image, audio, document, video)
+    // Handle media messages
     if (["image", "audio", "document", "video"].includes(message.type)) {
       const mediaId = message[message.type]?.id;
       const caption = message[message.type]?.caption || "";
