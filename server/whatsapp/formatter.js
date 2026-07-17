@@ -67,6 +67,9 @@ export function formatReply(result) {
 
     case "error":
       return result.message || "Something went wrong. Please try again.";
+      
+    case "session_aborted":
+      return "Session cancelled. Reply HELP to see what I can do.";
 
     default:
       return "Sorry, I didn't understand that.";

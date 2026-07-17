@@ -1,6 +1,3 @@
-// Twilio WhatsApp provider.
- 
-
 export const twilioProvider = {
   /**
    * Parse inbound webhook payload from Twilio.
@@ -9,6 +6,8 @@ export const twilioProvider = {
    * @returns {Promise<{ fromPhoneE164: string, text: string, mediaUrls?: string[] } | null>}
    */
   
+  
+
   async parseInbound(req) {
     const body = req.body ?? {};
 
@@ -61,6 +60,9 @@ export const twilioProvider = {
       Body: text,
     });
 
+    const statusCallback = process.env.TWILIO_STATUS_CALLBACK_URL;
+    if (statusCallback) params.set("StatusCallback", statusCallback);
+    
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -77,6 +79,7 @@ export const twilioProvider = {
     }
 
     const result = await response.json();
-    console.log("[twilio] Message sent:", result.sid);
+    console.log("[twilio] queued:", result.sid, "status:", result.status, "to:", toWhatsApp);
   },
+  
 };

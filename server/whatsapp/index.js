@@ -14,7 +14,9 @@ import { formatReply } from "./formatter.js";
 import { providerFromRequest } from "./providers/index.js";
 import { runAgent } from "../ai/index.js";
 
-// checks if the AI & Whatsapp middleware is enabled in env file.
+const FALLBACK_REPLY =
+  "Sorry, something went wrong on our end. Please try again in a moment.";
+
 function aiEnabled() {
   return (
     process.env.WHATSAPP_AI_MIDDLEWARE === "1" &&
@@ -26,13 +28,14 @@ const router = express.Router();
 
 // Check whether the server is running.
 router.get("/health", (_req, res) => {
-  res.json({ 
-    status: "ok", 
-    webhook: "whatsapp", 
-    implemented: false });
+  res.json({
+    status: "ok",
+    webhook: "whatsapp",
+    implemented: true,
+  });
 });
 
-// Verifying Whatsapp token.
+// Verifying Whatsapp token (Meta Cloud API webhook verification).
 router.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -43,30 +46,46 @@ router.get("/webhook", (req, res) => {
     return res.status(200).send(challenge);
   }
 
-  console.warn("[whatsapp] Webhook verification failed - token mismatch or invalid mode");
+  console.warn(
+    "[whatsapp] Webhook verification failed - token mismatch or invalid mode",
+  );
   res.status(403).json({ error: "Verification failed" });
 });
 
 // Main inbound webhook. Accepts messages from Twilio or Meta; the provider
 // adapter normalises the payload.
 router.post("/webhook", async (req, res) => {
-  try {
-    const provider = providerFromRequest(req);
-    const message = await provider.parseInbound(req);
-    if (!message) {
-      // Provider couldn't parse — ack so upstream doesn't retry.
-      return res.status(200).end();
-    }
+  let provider;
+  let message;
 
-    const user = await User.findOne({ phoneE164: message.fromPhoneE164 });
+  // --- Phase 1: identify provider + parse the inbound message ---------------
+  try {
+    provider = providerFromRequest(req);
+    message = await provider.parseInbound(req);
+  } catch (err) {
+    console.error("[whatsapp] parseInbound failed:", err);
+    return res.status(200).end();
+  }
+
+  if (!message) {
+    // Provider couldn't parse (status callback, non-message event, etc.).
+    return res.status(200).end();
+  }
+
+  // --- Phase 2: build the reply ---------------------------------------------
+  let reply = FALLBACK_REPLY;
+  let nextSession;
+
+  try {
     const sessions = getSessionStore();
-    const session = await sessions.load(message.fromPhoneE164);
+    const [user, session] = await Promise.all([
+      User.findOne({ phoneE164: message.fromPhoneE164 }),
+      sessions.load(message.fromPhoneE164),
+    ]);
+
     const actor = user
       ? { userId: user._id.toString(), source: "whatsapp" }
       : { userId: null, source: "whatsapp" };
-
-    let reply;
-    let nextSession;
 
     if (aiEnabled()) {
       try {
@@ -90,19 +109,39 @@ router.post("/webhook", async (req, res) => {
       reply = formatReply(actionResult);
       nextSession = actionResult.nextSession;
     }
-
-    await sessions.save(message.fromPhoneE164, nextSession);
-    await provider.sendOutbound({ to: message.fromPhoneE164, text: reply });
-
-    // 200 ACK tells the provider the delivery succeeded. The actual user
-    // reply goes out via sendOutbound above.
-    res.status(200).end();
   } catch (err) {
-    // Returning 501 here keeps the provider from retrying and flooding
-    // logs while the webhook is still a stub.
-    console.error("[whatsapp] webhook error:", err);
-    res.status(501).json({ error: err.message || "not implemented" });
+    // DB blip, handler crash, etc. `reply` stays as FALLBACK_REPLY.
+    console.error("[whatsapp] handler error:", err);
   }
+
+  // --- Phase 3: persist session (best-effort) --------------------------------
+  if (nextSession) {
+    try {
+      const sessions = getSessionStore();
+      await sessions.save(message.fromPhoneE164, nextSession);
+    } catch (err) {
+      console.error("[whatsapp] session save failed:", err);
+    }
+  }
+
+  // --- Phase 4: deliver the reply (best-effort) ------------------------------
+  try {
+    await provider.sendOutbound({ to: message.fromPhoneE164, text: reply });
+  } catch (err) {
+    console.error("[whatsapp] sendOutbound failed:", err);
+  }
+
+  // Always ACK 200 so the provider doesn't retry.
+  res.status(200).end();
+});
+
+// Twilio status callbacks — one POST per message lifecycle transition
+// (queued → sent → delivered, or failed/undelivered with an ErrorCode).
+// NOTE: this must be a top-level route, NOT inside the /webhook handler.
+router.post("/status", (req, res) => {
+  const { MessageSid, MessageStatus, ErrorCode } = req.body ?? {};
+  console.log("[twilio] status:", MessageSid, MessageStatus, ErrorCode ?? "");
+  res.status(200).end();
 });
 
 export default router;

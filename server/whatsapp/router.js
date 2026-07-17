@@ -1,10 +1,3 @@
-// Intent → action router.
-//
-// Each intent maps to one or more calls into server/services/*. The
-// router never touches the DB directly — that's the service layer's
-// job. It returns a structured `result` that formatter.js turns into
-// a WhatsApp reply.
-
 import { parseIntent } from "./intents/parse.js";
 import { listLatestPrices } from "../services/commodities.js";
 import { listNearbyMarkets } from "../services/markets.js";
@@ -26,6 +19,7 @@ const IDLE = { state: "idle", data: {} };
  */
 export async function route(ctx) {
   const intent = parseIntent(ctx.message.text, ctx.session);
+
   const { actor, user } = ctx;
 
   try {
@@ -68,7 +62,9 @@ export async function route(ctx) {
           intent: intent.kind,
           nextSession: IDLE,
         };
-
+      case "abort session":
+        return { kind: "help", nextSession: IDLE };
+        
       case "unknown":
       default:
         return {

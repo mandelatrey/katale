@@ -5,6 +5,7 @@ import {
   Activity, Package, MapPin, Clock, ArrowUpRight, ArrowDownRight,
   BarChart2, RefreshCw, ChevronRight
 } from './Icons';
+
 import CarriersView from './CarriersView';
 import { commodities } from '../constants';
 import * as commoditiesApi from '../api/commodities.js';
