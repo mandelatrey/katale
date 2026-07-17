@@ -19,7 +19,7 @@ const FALLBACK_REPLY =
 
 function aiEnabled() {
   return (
-    process.env.WHATSAPP_AI_MIDDLEWARE === "1" &&
+    process.env.WHATSAPP_AI_MIDDLEWARE === "0" &&
     !!process.env.GEMINI_API_KEY
   );
 }

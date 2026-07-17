@@ -47,7 +47,11 @@ const INTENTS = [
     score: 7,
     extract: (_m, t) => {
       const commodity = extractCommodity(t);
-      return commodity ? { commodity } : {};
+      const market = extractMarket(t);
+      const args = {};
+      if (commodity) args.commodity = commodity;
+      if (market) args.market = market;
+      return args;
     },
   },
   {
@@ -87,7 +91,9 @@ export function parseIntent(text, session) {
   const raw = (text ?? "").trim();
   if(!raw) return { kind: "unknown" };
 
-  if(session?.state && /^(cancel|stop|back|menu|exit)\b/i.test(raw)) {
+  // Bare escape words abort an in-flight session. "cancel TXN-…" is NOT an
+  // abort — it must fall through to the cancel_transaction intent below.
+  if (session?.state && /^(cancel|stop|back|menu|exit)\s*$/i.test(raw)) {
     return { kind: "abort_session" };
   }
 
@@ -121,12 +127,24 @@ function matchSessionFollowup(state, raw) {
   const lower = raw.toLowerCase();
   switch (state) {
     case "awaiting_price_commodity": {
-      // Apply the same extraction logic as the main parser: only accept
-      // leading letters and spaces so punctuation or extra words are stripped.
-      const commodity = lower.match(/^([a-z][a-z ]*)/)?.[1]?.trim();
-      return commodity
-        ? { kind: "price_check", args: { commodity } }
-        : null;
+      // Accept either "maize" or "maize in nakasero" — same char rules as
+      // the main parser (leading letters/spaces only).
+      const m = lower
+        .replace(/[?!.,;:]+\s*$/g, "")
+        .match(/^([a-z][a-z ]*?)(?:\s+(?:in|at)\s+([a-z][a-z ]+))?$/);
+      if (!m) return null;
+      const args = { commodity: m[1].trim() };
+      const market = cleanMarketName(m[2]);
+      if (market) args.market = market;
+      return { kind: "price_check", args };
+    }
+    case "awaiting_price_market_choice": {
+      // User was shown a numbered list of matching markets.
+      const n = Number(raw);
+      if (Number.isInteger(n) && n >= 1) {
+        return { kind: "choose_price_market", args: { index: n - 1 } };
+      }
+      return null; // not a number — treat as a fresh command
     }
     case "awaiting_nearby_location": {
       const coords = parseCoords(raw);
@@ -164,6 +182,37 @@ function extractCommodity(text) {
   return m?.[1]?.trim() || undefined;
 }
 
+/**
+ * Pull a market name out of a price query: the words after " in " / " at ".
+ *   "what is the price of maize in Nakasero?"  → "nakasero"
+ *   "beans price at owino market"              → "owino"
+ * Mirrors extractCommodity's normalisation so the two stay in sync.
+ */
+function extractMarket(text) {
+  if (!text) return undefined;
+
+  const cleaned = text
+    .toLowerCase()
+    .replace(/[?!.,;:]+\s*$/g, "")
+    .replace(/\s+(please|thanks|thank you|now|today)\s*$/g, "")
+    .trim();
+
+  // Anchor on the price phrasing so "markets near me" never lands here.
+  const m = cleaned.match(/\bprices?\b.*?\s(?:in|at)\s+([a-z][a-z ]+)$/);
+  return cleanMarketName(m?.[1]);
+}
+
+/** "the nakasero market" → "nakasero" (so it matches the DB name search). */
+function cleanMarketName(name) {
+  if (!name) return undefined;
+  const out = name
+    .toLowerCase()
+    .replace(/\b(the|market|markets)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return out || undefined;
+}
+
 function parseCoords(text) {
   if(!text) return undefined;
   // Require decimal points in both numbers so that integer pairs like prices
@@ -183,7 +232,7 @@ function parseCoords(text) {
 }
 
 function parseCarrierStatus(lower) {
-  if(!text) return undefined;
+  if(!lower) return undefined;
   if (/\bon\s+the\s+way\b/.test(lower)) return "ON THE WAY";
   if (/\bunloading\b/.test(lower)) return "UNLOADING";
   if (/\bloading\b/.test(lower)) return "LOADING";

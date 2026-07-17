@@ -42,7 +42,10 @@ export function formatReply(result) {
       return "What's the new status? Reply: ON THE WAY, LOADING, WAITING, or UNLOADING.";
 
     case "price_check":
-      return formatPrices(result.commodity, result.prices);
+      return formatPrices(result);
+
+    case "prompt_market_choice":
+      return formatMarketChoice(result);
 
     case "nearby_markets":
       return formatNearbyMarkets(result.markets);
@@ -76,22 +79,40 @@ export function formatReply(result) {
   }
 }
 
-function formatPrices(commodity, prices) {
+function formatPrices({ commodity, market, marketNotFound, prices }) {
   if (!prices?.length) {
-    return `No recent prices found for ${commodity}.`;
+    return market
+      ? `No recent prices found for ${commodity} at ${market}.`
+      : `No recent prices found for ${commodity}.`;
   }
 
   const top = prices.slice(0, 5).map(
     (p) => {
-      const market = p.marketInfo?.name ?? "Unknown";
+      const marketName = p.marketInfo?.name ?? "Unknown";
       const district = p.marketInfo?.district ? `, ${p.marketInfo.district}` : "";
-      return `• ${market}${district}: ${fmtMoney(p.price, p.currency)} / ${p.unit} (${p.priceType})`;
+      return `• ${marketName}${district}: ${fmtMoney(p.price, p.currency)} / ${p.unit} (${p.priceType})`;
     }
   );
-  const header = `Here are the latest price for ${commodity}:`;
+  const note = marketNotFound
+    ? `I couldn't find a market called "${marketNotFound}", so here are prices across all markets.\n`
+    : "";
+  const header = market
+    ? `Latest ${commodity} prices at ${market}:`
+    : `Latest ${commodity} prices:`;
   const footer = prices.length > 5 ? `\n…and ${prices.length - 5} more.` : "";
 
-  return [header, ...top].join("\n") + footer;
+  return note + [header, ...top].join("\n") + footer;
+}
+
+function formatMarketChoice({ query, options, invalidChoice }) {
+  const lines = (options ?? []).map((o, i) => {
+    const district = o.district ? ` — ${o.district}` : "";
+    return `${i + 1}. ${o.name}${district}`;
+  });
+  const header = invalidChoice
+    ? "Please pick one of these numbers:"
+    : `I found ${lines.length} markets matching "${query}". Which one?`;
+  return [header, ...lines, "Reply with a number, or CANCEL."].join("\n");
 }
 
 function formatNearbyMarkets(markets) {

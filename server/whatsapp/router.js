@@ -1,6 +1,6 @@
 import { parseIntent } from "./intents/parse.js";
 import { listLatestPrices } from "../services/commodities.js";
-import { listNearbyMarkets } from "../services/markets.js";
+import { listMarkets, listNearbyMarkets } from "../services/markets.js";
 import { listPayments } from "../services/payments.js";
 import { listCarriers, updateCarrier } from "../services/carriers.js";
 import { listAssets } from "../services/assets.js";
@@ -29,6 +29,13 @@ export async function route(ctx) {
 
       case "price_check":
         return await handlePriceCheck(intent.args ?? {}, actor);
+
+      case "choose_price_market":
+        return await handleChoosePriceMarket(
+          intent.args ?? {},
+          ctx.session,
+          actor,
+        );
 
       case "nearby_markets":
         return await handleNearbyMarkets(intent.args ?? {}, actor);
@@ -62,8 +69,8 @@ export async function route(ctx) {
           intent: intent.kind,
           nextSession: IDLE,
         };
-      case "abort session":
-        return { kind: "help", nextSession: IDLE };
+      case "abort_session":
+        return { kind: "session_aborted", nextSession: IDLE };
         
       case "unknown":
       default:
@@ -88,10 +95,94 @@ async function handlePriceCheck(args, actor) {
       nextSession: { state: "awaiting_price_commodity", data: {} },
     };
   }
-  const prices = await listLatestPrices({ commodity: args.commodity }, actor);
+
+  // No market mentioned → prices across all markets (previous behaviour).
+  if (!args.market) {
+    const prices = await listLatestPrices({ commodity: args.commodity }, actor);
+    return {
+      kind: "price_check",
+      commodity: args.commodity,
+      prices,
+      nextSession: IDLE,
+    };
+  }
+
+  // Resolve the market name against the DB.
+  const matches = (await listMarkets({ name: args.market }, actor)) ?? [];
+
+  if (matches.length === 0) {
+    // Unknown market: don't dead-end the user — show all-market prices
+    // and say we couldn't find the one they named.
+    const prices = await listLatestPrices({ commodity: args.commodity }, actor);
+    return {
+      kind: "price_check",
+      commodity: args.commodity,
+      marketNotFound: args.market,
+      prices,
+      nextSession: IDLE,
+    };
+  }
+
+  if (matches.length > 1) {
+    const options = matches.slice(0, 5).map((m) => ({
+      id: m._id.toString(),
+      name: m.name,
+      district: m.district,
+    }));
+    return {
+      kind: "prompt_market_choice",
+      query: args.market,
+      options,
+      nextSession: {
+        state: "awaiting_price_market_choice",
+        data: { commodity: args.commodity, options },
+      },
+    };
+  }
+
+  const market = matches[0];
+  const prices = await listLatestPrices(
+    { commodity: args.commodity, marketId: market._id.toString() },
+    actor,
+  );
   return {
     kind: "price_check",
     commodity: args.commodity,
+    market: market.name,
+    prices,
+    nextSession: IDLE,
+  };
+}
+
+// The user replied with a number after prompt_market_choice.
+async function handleChoosePriceMarket(args, session, actor) {
+  const data = session?.data ?? {};
+  const options = Array.isArray(data.options) ? data.options : [];
+  const pick = options[args.index];
+
+  if (!pick || !data.commodity) {
+    if (!options.length || !data.commodity) {
+      // Session was lost or malformed — start over cleanly.
+      return { kind: "unknown", nextSession: IDLE };
+    }
+    // Number out of range — re-show the list, keep the session alive.
+    return {
+      kind: "prompt_market_choice",
+      query: data.commodity,
+      options,
+      invalidChoice: true,
+      nextSession: session,
+    };
+  }
+
+  const prices = await listLatestPrices(
+    { commodity: data.commodity, marketId: pick.id },
+    actor,
+  );
+  return {
+    kind: "price_check",
+    commodity: data.commodity,
+    market: pick.name,
     prices,
     nextSession: IDLE,
   };
