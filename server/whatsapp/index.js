@@ -2,9 +2,10 @@
 //
 // This file is intentionally minimal. The real work lives in:
 //   - providers/{twilio,meta}.js   — inbound message normalisation + outbound send
-//   - router.js                     — intent → service action mapping
+//   - router.js                     — intent → service action mapping (does the work)
 //   - sessions.js                   — multi-turn conversation state
-//   - formatter.js                  — service result → WhatsApp text
+//   - formatter.js                  — deterministic result → WhatsApp text (fallback)
+//   - ../ai/openrouter.js           — LLM result → friendly WhatsApp text (when enabled)
 
 import express from "express";
 import User from "../models/User.js";
@@ -12,15 +13,17 @@ import { route } from "./router.js";
 import { getSessionStore } from "./sessions.js";
 import { formatReply } from "./formatter.js";
 import { providerFromRequest } from "./providers/index.js";
-import { runAgent } from "../ai/index.js";
+import { formatReplyAI } from "../ai/index.js";
 
 const FALLBACK_REPLY =
   "Sorry, something went wrong on our end. Please try again in a moment.";
 
+// AI formatting is ON by default; set WHATSAPP_AI_MIDDLEWARE=0 to disable it,
+// and it silently stays off if no OpenRouter key is configured.
 function aiEnabled() {
   return (
-    process.env.WHATSAPP_AI_MIDDLEWARE === "0" &&
-    !!process.env.GEMINI_API_KEY
+    process.env.WHATSAPP_AI_MIDDLEWARE !== "0" &&
+    !!process.env.OPENROUTER_API_KEY
   );
 }
 
@@ -73,6 +76,10 @@ router.post("/webhook", async (req, res) => {
   }
 
   // --- Phase 2: build the reply ---------------------------------------------
+  // The router always runs and does the actual work (DB reads/writes, session
+  // state, confirmations). When AI is enabled, the model only translates the
+  // router's structured result into friendlier text; if that call fails we
+  // fall back to the deterministic formatter. The model never touches tools.
   let reply = FALLBACK_REPLY;
   let nextSession;
 
@@ -87,27 +94,22 @@ router.post("/webhook", async (req, res) => {
       ? { userId: user._id.toString(), source: "whatsapp" }
       : { userId: null, source: "whatsapp" };
 
+    const actionResult = await route({ message, user, session, actor });
+    nextSession = actionResult.nextSession;
+
     if (aiEnabled()) {
       try {
-        const aiResult = await runAgent({ message, user, session, actor });
-        reply = aiResult.reply;
-        nextSession = aiResult.nextSession;
+        reply = await formatReplyAI(actionResult, {
+          userMessage: message.text,
+        });
       } catch (err) {
-        const cause = err?.cause;
-        const detail = cause
-          ? `${cause.code ?? cause.constructor?.name}: ${cause.message ?? cause}`
-          : err?.message ?? String(err);
         console.error(
-          `[whatsapp] AI middleware failed (${detail}), falling back to legacy router`,
+          `[whatsapp] AI formatting failed (${err?.message ?? err}), using deterministic formatter`,
         );
-        const actionResult = await route({ message, user, session, actor });
         reply = formatReply(actionResult);
-        nextSession = actionResult.nextSession;
       }
     } else {
-      const actionResult = await route({ message, user, session, actor });
       reply = formatReply(actionResult);
-      nextSession = actionResult.nextSession;
     }
   } catch (err) {
     // DB blip, handler crash, etc. `reply` stays as FALLBACK_REPLY.
