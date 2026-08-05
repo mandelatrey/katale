@@ -7,6 +7,7 @@
 //   - formatter.js                  — deterministic result → WhatsApp text (fallback)
 //   - ../ai/openrouter.js           — LLM result → friendly WhatsApp text (when enabled)
 
+
 import express from "express";
 import User from "../models/User.js";
 import { route } from "./router.js";
@@ -14,6 +15,7 @@ import { getSessionStore } from "./sessions.js";
 import { formatReply } from "./formatter.js";
 import { providerFromRequest } from "./providers/index.js";
 import { formatReplyAI } from "../ai/index.js";
+import "../ai/systemPrompt.js";
 
 const FALLBACK_REPLY =
   "Sorry, something went wrong on our end. Please try again in a moment.";

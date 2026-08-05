@@ -4,17 +4,8 @@
 // tools or touch the database. The deterministic router (router.js) does all
 // the work and returns a structured `result`; this module's ONLY job is to
 // turn that structured result into a friendly, WhatsApp-ready message.
-//
-// JSON in → text out. If anything fails it throws, so the caller can fall
-// back to the deterministic formatter (formatter.js).
-//
-// Env vars:
-//   OPENROUTER_API_KEY      — required
-//   OPENROUTER_MODEL        — default "meta-llama/llama-3.3-70b-instruct:free"
-//   OPENROUTER_SITE_URL     — optional, sent as HTTP-Referer (OpenRouter ranking)
-//   OPENROUTER_SITE_NAME    — optional, sent as X-Title
-//   WHATSAPP_AI_TIMEOUT_MS  — request timeout, default 15000
-//   WHATSAPP_AI_MAX_ATTEMPTS — retries on 429/5xx, default 3
+
+
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL =

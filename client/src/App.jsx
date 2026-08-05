@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useAuth } from './hooks/useAuth';
+import AuthScreen from './components/AuthScreen';
+import FarmerPortal from './components/FarmerPortal';
 import { SidebarProvider } from './components/ui/sidebar';
 import { TooltipProvider } from './components/ui/tooltip';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
@@ -134,6 +137,8 @@ function getMarkerStyle(price, priceRange, isSelected) {
 }
 
 function App() {
+  const { user, loading: authLoading, login, logout, signup } = useAuth();
+
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
   const [baseLayer, setBaseLayer] = useState(null);
@@ -163,6 +168,8 @@ function App() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    if (user?.role !== 'admin') return;
+    if (!document.getElementById('map')) return;
     const initialBaseLayer = createBaseLayer(baseLayerType);
     const mapInstance = new Map({
       target: 'map',
@@ -173,9 +180,10 @@ function App() {
     setBaseLayer(initialBaseLayer);
     return () => {
       mapInstance.setTarget(undefined);
-      mapInstance.dispose(); // Fix #10: fully dispose map on unmount
+      mapInstance.dispose();
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role]);
 
   // Fix #9: dispose old base layer source when swapping
   useEffect(() => {
@@ -372,6 +380,19 @@ function App() {
   const currentCommodity = commodities.find(c => c.key === selectedCommodity);
   const currentBaseLayer = BASE_LAYERS.find(l => l.id === baseLayerType);
 
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0d3b1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: '#4ec96b', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (!user) return <AuthScreen onLogin={login} onSignup={signup} />;
+
+  if (user.role === 'farmer') return <FarmerPortal user={user} onLogout={logout} />;
+
   return (
     <TooltipProvider>
     <SidebarProvider
@@ -381,6 +402,8 @@ function App() {
       {!isMobile && (
         <NavigationSidebar
           onNavigate={navigate}
+          user={user}
+          onLogout={logout}
         />
       )}
 

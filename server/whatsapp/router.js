@@ -6,6 +6,7 @@ import { listCarriers, updateCarrier } from "../services/carriers.js";
 import { listAssets } from "../services/assets.js";
 import { listStatements } from "../services/statements.js";
 import { updateTransaction } from "../services/transactions.js";
+import User from "../models/User.js";
 
 const IDLE = { state: "idle", data: {} };
 
@@ -71,7 +72,29 @@ export async function route(ctx) {
         };
       case "abort_session":
         return { kind: "session_aborted", nextSession: IDLE };
-        
+
+      case "opt_out":
+        return await handleOptOut(user, actor);
+
+      case "opt_in":
+        return await handleOptIn(user, actor);
+
+      case "less_notifications":
+        return { kind: "less_notifications", nextSession: IDLE };
+
+      case "more_info":
+        return { kind: "more_info", nextSession: IDLE };
+
+      case "list_stock":
+        return { kind: "not_implemented", intent: "list_stock", nextSession: IDLE };
+
+      case "confirm_yes":
+      case "confirm_no":
+      case "request_call":
+        // These are session-contextual — fall through to unknown for now
+        // until the triggering flows (order alerts, stock changes) are wired.
+        return { kind: "unknown", nextSession: IDLE };
+
       case "unknown":
       default:
         return {
@@ -242,6 +265,21 @@ async function handleListAssets(actor) {
 async function handleLatestStatement(actor) {
   const [statement] = await listStatements({ limit: 1 }, actor);
   return { kind: "latest_statement", statement: statement ?? null, nextSession: IDLE };
+}
+
+async function handleOptOut(user, _actor) {
+  if (user) {
+    await User.findByIdAndUpdate(user._id, { active: false });
+  }
+  return { kind: "paused", nextSession: IDLE };
+}
+
+async function handleOptIn(user, _actor) {
+  if (user) {
+    await User.findByIdAndUpdate(user._id, { active: true });
+  }
+  const first_name = user?.name?.split(" ")[0] ?? null;
+  return { kind: "resumed", first_name, nextSession: IDLE };
 }
 
 async function handleCancelTransaction(args, actor) {

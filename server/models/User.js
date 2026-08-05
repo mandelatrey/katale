@@ -21,9 +21,11 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["farmer", "broker", "carrier", "staff"],
+      enum: ["farmer", "broker", "carrier", "staff", "admin"],
       default: "farmer",
     },
+    // Hashed password — only set for admin users (farmers authenticate via WhatsApp/phone).
+    passwordHash: { type: String, select: false },
     // Optional — links this user to a Carrier record so a carrier driver's
     // WhatsApp messages update their own vehicle status without having to
     // specify an id.

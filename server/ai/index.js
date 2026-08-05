@@ -1,7 +1,9 @@
-// AI entry point for the WhatsApp middleware.
-//
-// Provider: OpenRouter. Set OPENROUTER_API_KEY in server/.env.
-// Override the model with OPENROUTER_MODEL (default:
-// meta-llama/llama-3.3-70b-instruct:free).
-
 export { formatReplyAI } from "./openrouter.js";
+// export {runAgent as runAgentGemini } from "./gemini.js"
+export { runAgent as runAgentOpenRouter} from './openrouter-agent.js';
+
+export function runAgent(ctx){
+    const provider = process.env.WHATSAPP_AI_PROVIDER;
+    // if(provider === "gemini") return runAgentGemini(ctx);
+    return runAgentOpenRouter(ctx);
+}

@@ -1,19 +1,41 @@
-const ESCAPE_RE = /^(help|menu|\?|commands?|start|cancel|stop)\b/;
-
 /**
  * @param {string} text
  * @param {{ state: string, data: any } | null} session
  * @returns {{ kind: string, args?: Record<string, unknown> }}
  */
 
-
 const INTENTS = [
+  // ── Design-spec reply keywords (exact bare-word, highest priority) ─────────
   {
-    // Greetings + explicit help. Highest score so "hi, price of maize" still
-    // greets rather than half-matching something else.
+    kind: "opt_out",
+    match: (t) => /^stop\s*$/i.test(t),
+    score: 30,
+  },
+  {
+    kind: "opt_in",
+    match: (t) => /^start\s*$/i.test(t),
+    score: 30,
+  },
+  {
+    kind: "less_notifications",
+    match: (t) => /^less\s*$/i.test(t),
+    score: 25,
+  },
+  {
+    kind: "more_info",
+    match: (t) => /^more\s*$/i.test(t),
+    score: 25,
+  },
+  {
+    kind: "list_stock",
+    match: (t) => /^stock\s*$/i.test(t),
+    score: 25,
+  },
+  {
+    // Greetings + explicit help. "start"/"stop" are separate intents above.
     kind: "help",
     match: (t) =>
-      /^(help|menu|\?|commands?|start)\b/i.test(t) ||
+      /^(help|menu|\?|commands?)\b/i.test(t) ||
       /^(hi|hello|hey|yo|sup|hallo|habari)\b/i.test(t),
     score: 20,
   },
@@ -91,8 +113,8 @@ export function parseIntent(text, session) {
   const raw = (text ?? "").trim();
   if(!raw) return { kind: "unknown" };
 
-  // Bare escape words abort an in-flight session. "cancel TXN-…" is NOT an
-  // abort — it must fall through to the cancel_transaction intent below.
+  // STOP/CANCEL/BACK/EXIT abort an in-flight session.
+  // "start" no longer aborts — it routes to opt_in via the INTENTS array.
   if (session?.state && /^(cancel|stop|back|menu|exit)\s*$/i.test(raw)) {
     return { kind: "abort_session" };
   }
@@ -153,6 +175,15 @@ function matchSessionFollowup(state, raw) {
     case "awaiting_carrier_status": {
       const status = parseCarrierStatus(lower);
       return status ? { kind: "update_carrier_status", args: { status } } : null;
+    }
+    case "awaiting_order_confirmation": {
+      if (/^yes\s*$/i.test(raw)) return { kind: "confirm_yes" };
+      if (/^no\s*$/i.test(raw)) return { kind: "confirm_no" };
+      return null;
+    }
+    case "awaiting_call_confirmation": {
+      if (/^call\s*$/i.test(raw)) return { kind: "request_call" };
+      return null;
     }
     default:
       return null;

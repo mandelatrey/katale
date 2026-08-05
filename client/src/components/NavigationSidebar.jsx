@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   { label: 'Statements',   icon: FileText,         route: ROUTES.STATEMENTS },
 ];
 
-export default function NavigationSidebar({ onNavigate }) {
+export default function NavigationSidebar({ onNavigate, user, onLogout }) {
   const location = useLocation();
   const { open, toggleSidebar } = useSidebar();
   const [pendingPayments, setPendingPayments] = useState(0);
@@ -150,21 +150,27 @@ export default function NavigationSidebar({ onNavigate }) {
         }}>
           <div style={{
             width: 28, height: 28, borderRadius: 8,
-            background: '#4b5563', flexShrink: 0,
+            background: '#1f8a3e', flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#fff', fontSize: 11, fontWeight: 600,
           }}>
-            IM
+            {user?.name?.charAt(0)?.toUpperCase() ?? 'A'}
           </div>
           {open && (
             <>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#0c2211', lineHeight: 1.3 }}>Ismail M.</div>
-                <div style={{ fontSize: 10, color: 'rgba(20,30,20,0.5)', lineHeight: 1.3 }}>Broker</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#0c2211', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.name ?? 'Admin'}
+                </div>
+                <div style={{ fontSize: 10, color: 'rgba(20,30,20,0.5)', lineHeight: 1.3, textTransform: 'capitalize' }}>
+                  {user?.role ?? 'admin'}
+                </div>
               </div>
               <LogOut
                 className="h-4 w-4"
                 style={{ color: 'rgba(20,30,20,0.35)', cursor: 'pointer', flexShrink: 0 }}
+                onClick={onLogout}
+                title="Log out"
               />
             </>
           )}

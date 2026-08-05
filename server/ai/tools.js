@@ -20,12 +20,12 @@ import {
   comparePrices,
   getTransportEstimate,
 } from "../services/commodities.js";
-im;
-import { listPayments } from "../serport {
+import {
   listMarkets,
   listNearbyMarkets,
   getMarketById,
-} from "../services/markets.js"vices/payments.js";
+} from "../services/markets.js";
+import { listPayments } from "../services/payments.js";
 import {
   listCarriers,
   updateCarrier,
@@ -606,6 +606,17 @@ export const geminiToolDeclarations = [
     }),
   },
 ];
+
+// OpenAI / OpenRouter format: JSON Schema passes through as-is since
+// `input_schema` is already a valid JSON Schema for parameters.
+export const openaiToolDeclarations = TOOLS.map((t) => ({
+  type: "function",
+  function: {
+    name: t.definition.name,
+    description: t.definition.description,
+    parameters: t.definition.input_schema,
+  },
+}));
 
 const handlerMap = Object.fromEntries(
   TOOLS.map((t) => [t.definition.name, t.handler]),
