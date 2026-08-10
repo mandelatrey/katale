@@ -40,7 +40,7 @@ router.post(
       throw badRequest("phoneE164 and password are required");
     }
     // Select passwordHash explicitly since it has select:false
-    const user = await User.findOne({ phoneE164, role: "admin" }).select(
+    const user = await User.findOne({ phoneE164, role: { $in: ["admin", "staff"] } }).select(
       "+passwordHash"
     );
     if (!user || !user.active) throw badRequest("Invalid credentials");
@@ -64,6 +64,9 @@ router.get(
       name: req.user.name,
       role: req.user.role,
       phoneE164: req.user.phoneE164,
+      active: req.user.active,
+      createdAt: req.user.createdAt,
+      permissions: req.user.permissions,
     },
   }))
 );

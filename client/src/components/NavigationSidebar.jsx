@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ROUTES } from '../routes';
-import { LayoutDashboard, Users, Factory, CreditCard, Receipt, Truck, FileText, Settings, Bell, MessageSquare, LogOut, ChevronDown, ChevronUp, ChevronRight } from './Icons';
+import { Users, Factory, CreditCard, Receipt, Truck, FileText, Settings, Bell, LogOut, ChevronDown, ChevronRight } from './Icons';
 import * as paymentsApi from '../api/payments.js';
+import IonIcon from './IonIcon';
 import {
   Sidebar,
   SidebarContent,
@@ -19,9 +20,10 @@ import {
 
 const API_URL = '/api';
 
+const ShieldIcon = (p) => <IonIcon name="shield-checkmark-outline" {...p} />;
+
 const NAV_ITEMS = [
   { label: 'Commodities',  icon: Factory,          route: ROUTES.MAP },
-  { label: 'Dashboard',    icon: LayoutDashboard,  route: ROUTES.DASHBOARD },
   { label: 'Carriers',     icon: Users,            route: ROUTES.CARRIERS },
   { label: 'Transactions', icon: CreditCard,       route: ROUTES.TRANSACTIONS },
   { label: 'Payments',     icon: Receipt,          route: ROUTES.PAYMENTS },
@@ -30,7 +32,11 @@ const NAV_ITEMS = [
   { label: 'Statements',   icon: FileText,         route: ROUTES.STATEMENTS },
 ];
 
-export default function NavigationSidebar({ onNavigate, user, onLogout }) {
+const ADMIN_NAV_ITEMS = [
+  { label: 'Users',        icon: ShieldIcon,       route: ROUTES.USERS },
+];
+
+export default function NavigationSidebar({ onNavigate, user, onLogout, onOpenAccount }) {
   const location = useLocation();
   const { open, toggleSidebar } = useSidebar();
   const [pendingPayments, setPendingPayments] = useState(0);
@@ -115,6 +121,18 @@ export default function NavigationSidebar({ onNavigate, user, onLogout }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {user?.role === 'admin' && ADMIN_NAV_ITEMS.map((item) => (
+                <SidebarMenuItem key={item.label}>
+                  <SidebarMenuButton
+                    isActive={location.pathname === item.route}
+                    onClick={() => onNavigate(item.route)}
+                    tooltip={item.label}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -123,8 +141,7 @@ export default function NavigationSidebar({ onNavigate, user, onLogout }) {
       <SidebarFooter>
         <SidebarMenu>
           {[
-            { label: 'Notifications', icon: Bell,          badge: 3 },
-            { label: 'Chat',          icon: MessageSquare, badge: 5 },
+            { label: 'Notifications', icon: Bell, badge: 3 },
           ].map((item) => (
             <SidebarMenuItem key={item.label}>
               <SidebarMenuButton tooltip={item.label}>
@@ -142,12 +159,21 @@ export default function NavigationSidebar({ onNavigate, user, onLogout }) {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          padding: '10px 12px',
-          borderTop: '1px solid rgba(0,0,0,0.08)',
-          gap: 10,
-        }}>
+        <button
+          onClick={onOpenAccount}
+          title="Account info"
+          style={{
+            display: 'flex', alignItems: 'center',
+            padding: '10px 12px',
+            borderTop: '1px solid rgba(0,0,0,0.08)',
+            gap: 10, width: '100%',
+            background: 'none', border: 'none', cursor: 'pointer',
+            textAlign: 'left', borderRadius: 0,
+            transition: 'background 0.15s ease',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.04)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+        >
           <div style={{
             width: 28, height: 28, borderRadius: 8,
             background: '#1f8a3e', flexShrink: 0,
@@ -168,13 +194,13 @@ export default function NavigationSidebar({ onNavigate, user, onLogout }) {
               </div>
               <LogOut
                 className="h-4 w-4"
-                style={{ color: 'rgba(20,30,20,0.35)', cursor: 'pointer', flexShrink: 0 }}
-                onClick={onLogout}
+                style={{ color: 'rgba(20,30,20,0.35)', flexShrink: 0 }}
+                onClick={e => { e.stopPropagation(); onLogout(); }}
                 title="Log out"
               />
             </>
           )}
-        </div>
+        </button>
       </SidebarFooter>
     </Sidebar>
   );

@@ -10,9 +10,16 @@ if (!SECRET && process.env.NODE_ENV !== "test") {
 const secret = SECRET || "dev-secret-change-in-prod";
 
 export function signToken(payload) {
-  return jwt.sign(payload, secret, { expiresIn: EXPIRY });
+  return jwt.sign(
+    payload, 
+    secret, 
+    { expiresIn: EXPIRY }
+  );
 }
 
 export function verifyToken(token) {
-  return jwt.verify(token, secret);
+  return jwt.verify(
+    token, 
+    secret
+  );
 }

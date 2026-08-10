@@ -20,13 +20,14 @@ import { Style, Circle, Fill, Stroke, Icon } from 'ol/style';
 import Popup from './components/Popup';
 import MarketList from './components/MarketList';
 import NavigationSidebar from './components/NavigationSidebar';
-import Dashboard from './components/Dashboard';
 import AssetsView from './components/AssetsView';
 import TransactionsView from './components/TransactionsView';
 import PaymentsView from './components/PaymentsView';
 import ReportsView from './components/ReportsView';
 import StatementsView from './components/StatementsView';
 import CarriersView from './components/CarriersView';
+import UsersView from './components/UsersView';
+import AccountModal from './components/AccountModal';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -37,7 +38,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuCheckboxItem,
 } from './components/ui/dropdown-menu';
-import { ChevronDown, List, Navigation, TriangleAlert, MapPin, Store, LayoutGrid, Leaf, Receipt, MessageCircle, MoreHorizontal, Truck, Package, CreditCard, BarChart2, FileText, Users, Bell, Settings, LogOut } from './components/Icons';
+import { ChevronDown, List, Navigation, TriangleAlert, MapPin, Store, Leaf, Receipt, MoreHorizontal, Truck, Package, CreditCard, BarChart2, FileText, Users, Bell, Settings, LogOut } from './components/Icons';
 import { commodities, regions } from './constants';
 import { useIsMobile } from './hooks/use-mobile';
 import * as marketsApi from './api/markets.js';
@@ -162,9 +163,9 @@ function App() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('commodities'); // bottom tab active item
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
-  const unreadMessages = 2; // badge count — replace with real data when available
   const [showAllCommodities, setShowAllCommodities] = useState(false);
-  
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
+
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -380,6 +381,12 @@ function App() {
   const currentCommodity = commodities.find(c => c.key === selectedCommodity);
   const currentBaseLayer = BASE_LAYERS.find(l => l.id === baseLayerType);
 
+  // Farmer demo mode — access via ?demo=farmer in URL
+  const isDemoFarmer = new URLSearchParams(window.location.search).get('demo') === 'farmer';
+  if (isDemoFarmer) {
+    return <FarmerPortal user={{ name: 'Wabwire Kato', role: 'farmer' }} onLogout={() => window.location.href = '/'} />;
+  }
+
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', background: '#0d3b1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -404,6 +411,7 @@ function App() {
           onNavigate={navigate}
           user={user}
           onLogout={logout}
+          onOpenAccount={() => setAccountModalOpen(true)}
         />
       )}
 
@@ -415,13 +423,13 @@ function App() {
       {!isMobile && location.pathname !== ROUTES.MAP && (
         <div style={{ flex: 1, flexDirection: 'column', minHeight: 0, overflow: 'hidden', display: 'flex' }}>
           <Routes>
-            <Route path={ROUTES.DASHBOARD} element={<Dashboard markets={markets} currency={currency} />} />
             <Route path={ROUTES.CARRIERS} element={<CarriersView />} />
             <Route path={ROUTES.ASSETS} element={<AssetsView currency={currency} />} />
             <Route path={ROUTES.TRANSACTIONS} element={<TransactionsView currency={currency} />} />
             <Route path={ROUTES.PAYMENTS} element={<PaymentsView currency={currency} />} />
             <Route path={ROUTES.REPORTS} element={<ReportsView currency={currency} />} />
             <Route path={ROUTES.STATEMENTS} element={<StatementsView currency={currency} />} />
+            <Route path={ROUTES.USERS} element={<UsersView currentUser={user} />} />
             <Route path="*" element={<Navigate to={ROUTES.MAP} replace />} />
           </Routes>
         </div>
@@ -605,11 +613,6 @@ function App() {
         {isMobile && (
           <>
             {/* ── Mobile Tab View Panels (sit above map, below top nav) ── */}
-            {activeTab === 'dashboard' && (
-              <div className="mobile-view-panel">
-                <Dashboard markets={markets} currency={currency} isMobile={true} />
-              </div>
-            )}
             {activeTab === 'carriers' && (
               <div className="mobile-view-panel">
                 <CarriersView />
@@ -640,19 +643,11 @@ function App() {
                 <StatementsView currency={currency} isMobile={true} />
               </div>
             )}
-            {activeTab === 'chat' && (
-              <div className="mobile-view-panel">
-                <div className="mobile-placeholder">
-                  <div className="mobile-placeholder-icon">
-                    <MessageCircle size={28} color="#1a6b30" />
-                  </div>
-                  <div className="mobile-placeholder-title">Chat</div>
-                  <div className="mobile-placeholder-sub">Message brokers, buyers, and carriers directly from the market map.</div>
-                  <span className="mobile-placeholder-badge">🚧 Coming Soon</span>
-                </div>
+            {activeTab === 'users' && (
+              <div className="mobile-view-panel" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 60px)' }}>
+                <UsersView currentUser={user} />
               </div>
             )}
-
             {/* ── Row 1: Main Top Bar — Brand + Map Controls ── */}
             <div className="mobile-top-bar">
               <span className="mobile-brand" style={{ display: 'flex', alignItems: 'center' }}>
@@ -660,8 +655,8 @@ function App() {
               </span>
 
               <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-                {/* Base Map Picker */}
-                <DropdownMenu modal={false}>
+                {/* Base Map Picker — only on the commodities/map tab */}
+                {activeTab === 'commodities' && <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <button
                       className="mobile-dropdown-btn"
@@ -703,7 +698,7 @@ function App() {
                       Show markers
                     </DropdownMenuCheckboxItem>
                   </DropdownMenuContent>
-                </DropdownMenu>
+                </DropdownMenu>}
               </div>
             </div>
 
@@ -959,20 +954,20 @@ function App() {
               </div>
               <div className="mobile-more-grid">
                 {[
-                  { label: 'Assets',          icon: Package    },
-                  { label: 'Payments',        icon: CreditCard },
-                  { label: 'Reports',         icon: BarChart2  },
-                  { label: 'Statements',      icon: FileText   },
-                  { label: 'Staff',           icon: Users      },
-                  { label: 'Notifications',   icon: Bell       },
-                  { label: 'Company Settings',icon: Settings   },
-                ].map(({ label, icon: Icon }) => (
+                  { label: 'Assets',          tab: 'assets',        icon: Package    },
+                  { label: 'Payments',        tab: 'payments',      icon: CreditCard },
+                  { label: 'Reports',         tab: 'reports',       icon: BarChart2  },
+                  { label: 'Statements',      tab: 'statements',    icon: FileText   },
+                  ...(user?.role === 'admin' ? [{ label: 'Users', tab: 'users', icon: Users }] : []),
+                  { label: 'Notifications',   tab: 'notifications', icon: Bell       },
+                  { label: 'Company Settings',tab: 'company-settings', icon: Settings },
+                ].map(({ label, tab, icon: Icon }) => (
                   <button
                     key={label}
                     className="mobile-more-item"
                     onClick={() => {
                       setMoreSheetOpen(false);
-                      setActiveTab(label.toLowerCase().replace(/\s+/g, '-'));
+                      setActiveTab(tab);
                     }}
                   >
                     <Icon size={22} color="#1a6b30" />
@@ -980,33 +975,31 @@ function App() {
                   </button>
                 ))}
               </div>
-              <div className="mobile-more-user">
+              <button
+                className="mobile-more-user"
+                onClick={() => { setMoreSheetOpen(false); setAccountModalOpen(true); }}
+              >
                 <div className="mobile-more-user-info">
-                  <div className="mobile-more-avatar">IM</div>
+                  <div className="mobile-more-avatar">
+                    {user?.name?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() ?? 'A'}
+                  </div>
                   <div>
-                    <div className="mobile-more-user-name">Ismail M.</div>
-                    <div className="mobile-more-user-role">Broker</div>
+                    <div className="mobile-more-user-name">{user?.name ?? 'Account'}</div>
+                    <div className="mobile-more-user-role" style={{ textTransform: 'capitalize' }}>{user?.role ?? ''}</div>
                   </div>
                 </div>
-                <button className="mobile-more-logout">
+                <button
+                  className="mobile-more-logout"
+                  onClick={e => { e.stopPropagation(); logout(); setMoreSheetOpen(false); }}
+                >
                   <LogOut size={14} />
                   Logout
                 </button>
-              </div>
+              </button>
             </div>
 
             {/* ── Bottom Tab Bar ── */}
             <nav className="mobile-tab-bar">
-              <button
-                className={`mobile-tab-item${activeTab === 'dashboard' ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveTab('dashboard');
-                  setSelectedMarket(null);
-                }}
-              >
-                <LayoutGrid size={20} color={activeTab === 'dashboard' ? '#1a6b30' : '#9CA3AF'} />
-                <span className="mobile-tab-label">Dashboard</span>
-              </button>
               <button
                 className={`mobile-tab-item${activeTab === 'commodities' ? ' active' : ''}`}
                 onClick={() => {
@@ -1028,17 +1021,14 @@ function App() {
                 <span className="mobile-tab-label">Transactions</span>
               </button>
               <button
-                className={`mobile-tab-item${activeTab === 'chat' ? ' active' : ''}`}
+                className={`mobile-tab-item${activeTab === 'users' ? ' active' : ''}`}
                 onClick={() => {
-                  setActiveTab('chat');
+                  setActiveTab('users');
                   setSelectedMarket(null);
                 }}
               >
-                <MessageCircle size={20} color={activeTab === 'chat' ? '#1a6b30' : '#9CA3AF'} />
-                {unreadMessages > 0 && (
-                  <span className="mobile-tab-badge">{unreadMessages}</span>
-                )}
-                <span className="mobile-tab-label">Chat</span>
+                <Users size={20} color={activeTab === 'users' ? '#1a6b30' : '#9CA3AF'} />
+                <span className="mobile-tab-label">Users</span>
               </button>
               <button
                 className={`mobile-tab-item${moreSheetOpen ? ' active' : ''}`}
@@ -1054,7 +1044,7 @@ function App() {
           </>
         )}
 
-        {!isMobile && (
+        {!isMobile && location.pathname === ROUTES.MAP && (
           <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 400 }}>
             <div style={{ backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '10px 8px', fontFamily: 'inherit', width: 148, overflow: 'hidden' }}>
               {/* Header */}
@@ -1113,7 +1103,7 @@ function App() {
           />
         )}
 
-        <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 400, backgroundColor: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', padding: '10px 14px', boxShadow: '0 2px 8px rgba(0,0,0,.08)', fontSize: 11 }}>
+        <div style={{ position: 'absolute', bottom: isMobile ? 80 : 16, right: 16, zIndex: 400, backgroundColor: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', padding: '10px 14px', boxShadow: '0 2px 8px rgba(0,0,0,.08)', fontSize: 11 }}>
           <div style={{ fontWeight: 700, color: '#374151', marginBottom: 6, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Price Level</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#1f8a3e' }}></div>
@@ -1146,6 +1136,13 @@ function App() {
       </div>
       </div>
     </SidebarProvider>
+    {accountModalOpen && (
+      <AccountModal
+        user={user}
+        onClose={() => setAccountModalOpen(false)}
+        onLogout={logout}
+      />
+    )}
     </TooltipProvider>
   );
 }

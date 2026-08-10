@@ -7,4 +7,5 @@ export const ROUTES = {
   PAYMENTS:     '/payments',
   REPORTS:      '/reports',
   STATEMENTS:   '/statements',
+  USERS:        '/users',
 };

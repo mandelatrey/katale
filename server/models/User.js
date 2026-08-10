@@ -35,8 +35,19 @@ const userSchema = new mongoose.Schema(
     },
     active: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
+    // Granular permissions for staff/team members — ignored for admin/farmer roles
+    permissions: {
+      canViewCommodities:  { type: Boolean, default: true },
+      canViewCarriers:     { type: Boolean, default: true },
+      canViewAssets:       { type: Boolean, default: false },
+      canViewTransactions: { type: Boolean, default: false },
+      canViewPayments:     { type: Boolean, default: false },
+      canViewReports:      { type: Boolean, default: false },
+      canViewStatements:   { type: Boolean, default: false },
+      canAddUsers:         { type: Boolean, default: false },
+    },
   },
-  { minimize: true },
+  { minimize: false },
 );
 
 export default mongoose.model("User", userSchema);
