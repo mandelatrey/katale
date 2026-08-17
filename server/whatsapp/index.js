@@ -17,33 +17,6 @@ import { providerFromRequest } from "./providers/index.js";
 import { formatReplyAI } from "../ai/index.js";
 import "../ai/systemPrompt.js";
 
-<<<<<<< HEAD
-// When WHATSAPP_AI_MIDDLEWARE=1 and the selected provider has an API key,
-// inbound messages go through the LLM agent in ../ai/agent.js instead of
-// the keyword router below. The agent decides which DB tools to call and
-// composes the reply itself. If the agent throws we fall back to the
-// legacy router so a bad model call never bricks the webhook.
-function aiEnabled() {
-  if (process.env.WHATSAPP_AI_MIDDLEWARE !== "1") return false;
-  const provider = (process.env.AI_PROVIDER || "anthropic").toLowerCase();
-  if (provider === "gemini") return !!process.env.GEMINI_API_KEY;
-  return !!process.env.ANTHROPIC_API_KEY;
-}
-
-function aiConfigStatus() {
-  if (process.env.WHATSAPP_AI_MIDDLEWARE !== "1") {
-    return "disabled (WHATSAPP_AI_MIDDLEWARE!=1)";
-  }
-  const provider = (process.env.AI_PROVIDER || "anthropic").toLowerCase();
-  if (provider === "gemini") {
-    return process.env.GEMINI_API_KEY
-      ? "enabled (gemini)"
-      : "disabled (missing GEMINI_API_KEY for gemini)";
-  }
-  return process.env.ANTHROPIC_API_KEY
-    ? "enabled (anthropic)"
-    : "disabled (missing ANTHROPIC_API_KEY for anthropic)";
-=======
 const FALLBACK_REPLY =
   "Sorry, something went wrong on our end. Please try again in a moment.";
 
@@ -54,7 +27,6 @@ function aiEnabled() {
     process.env.WHATSAPP_AI_MIDDLEWARE !== "0" &&
     !!process.env.OPENROUTER_API_KEY
   );
->>>>>>> 551d08ac54c9be4b2971c1d2ab3364cb4fde51c8
 }
 
 const router = express.Router();
@@ -124,15 +96,8 @@ router.post("/webhook", async (req, res) => {
       ? { userId: user._id.toString(), source: "whatsapp" }
       : { userId: null, source: "whatsapp" };
 
-<<<<<<< HEAD
-    let reply;
-    let nextSession;
-    const aiOn = aiEnabled();
-    console.log(`[whatsapp] middleware path: ${aiOn ? "ai" : "legacy"} (${aiConfigStatus()})`);
-=======
     const actionResult = await route({ message, user, session, actor });
     nextSession = actionResult.nextSession;
->>>>>>> 551d08ac54c9be4b2971c1d2ab3364cb4fde51c8
 
     if (aiOn) {
       try {

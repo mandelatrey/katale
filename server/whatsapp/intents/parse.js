@@ -111,12 +111,7 @@ const INTENTS = [
 
 export function parseIntent(text, session) {
   const raw = (text ?? "").trim();
-<<<<<<< HEAD
-  const lower = raw.toLowerCase();
-  const commodity = detectCommodity(lower);
-=======
   if(!raw) return { kind: "unknown" };
->>>>>>> 551d08ac54c9be4b2971c1d2ab3364cb4fde51c8
 
   // STOP/CANCEL/BACK/EXIT abort an in-flight session.
   // "start" no longer aborts — it routes to opt_in via the INTENTS array.
@@ -138,14 +133,7 @@ export function parseIntent(text, session) {
     } 
   }
 
-<<<<<<< HEAD
-  // Price check: "price", "prices", "price of maize", "prices for beans".
-  if (/\bprices?\b/.test(lower)) {
-    return { kind: "price_check", args: commodity ? { commodity } : {} };
-  }
-=======
   if(!best) return { kind: "unknown"};
->>>>>>> 551d08ac54c9be4b2971c1d2ab3364cb4fde51c8
 
   return {
     kind: best.intent.kind,
@@ -281,34 +269,4 @@ function parseCarrierStatus(lower) {
   if (/\bloading\b/.test(lower)) return "LOADING";
   if (/\bwaiting\b/.test(lower)) return "WAITING";
   return null;
-<<<<<<< HEAD
 }
-
-const KNOWN_COMMODITIES = [
-  "maize",
-  "beans",
-  "coffee",
-  "rice",
-  "matooke",
-  "groundnuts",
-  "cassava",
-  "sweet potatoes",
-  "sweet_potatoes",
-  "sorghum",
-];
-
-function detectCommodity(lower) {
-  const normalized = lower
-    .replace(/[^a-z\s_]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  const direct = KNOWN_COMMODITIES.find((c) =>
-    new RegExp(`\\b${c.replace(/\s+/g, "\\s+")}\\b`).test(normalized),
-  );
-  if (!direct) return undefined;
-  return direct.replace(/\s+/g, "_");
-}
-
-=======
-}
->>>>>>> 551d08ac54c9be4b2971c1d2ab3364cb4fde51c8
