@@ -5,7 +5,6 @@ const ROLE_LABELS = {
   staff:   { label: 'Team Member', color: '#7c3aed', bg: '#ede9fe' },
   farmer:  { label: 'Farmer',      color: '#d97706', bg: '#fef3c7' },
   broker:  { label: 'Broker',      color: '#0284c7', bg: '#e0f2fe' },
-  carrier: { label: 'Carrier',     color: '#dc2626', bg: '#fee2e2' },
 };
 
 function RoleBadge({ role }) {

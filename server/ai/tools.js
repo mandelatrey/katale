@@ -10,8 +10,6 @@
 // `ctx` matches the agent's call context: { actor, user, message, session }.
 // Handlers translate between the LLM's tool inputs and the MCP resource layer
 // (server/mcp.js), which provides a unified interface to all service functions.
-// Handlers are also where we apply WhatsApp-specific authorization (e.g.
-// update_carrier_status only touches the sender's linked carrier).
 
 import {
   getLatestPrices,
@@ -22,10 +20,6 @@ import {
   getNearbyMarkets,
   getMarketById,
   getPayments,
-  getCarriers,
-  getCarrierById,
-  updateCarrier,
-  getAssets,
   getTransactions,
   getTransactionById,
   createTransaction,
@@ -252,114 +246,6 @@ const TOOLS = [
           status: input.status,
           method: input.method,
           limit: input.limit ?? 10,
-        },
-        ctx.actor,
-      ),
-  },
-
-  {
-    definition: {
-      name: "list_carriers",
-      description:
-        "List carrier vehicles in the fleet, optionally filtered by status, category, or name search.",
-      input_schema: {
-        type: "object",
-        properties: {
-          search: { type: "string" },
-          category: {
-            type: "string",
-            enum: ["Favorites", "Trucks", "Vans"],
-          },
-          status: {
-            type: "string",
-            enum: ["ON THE WAY", "LOADING", "WAITING", "UNLOADING"],
-          },
-        },
-      },
-    },
-    handler: (input, ctx) =>
-      getCarriers(
-        {
-          search: input.search,
-          category: input.category,
-          status: input.status,
-        },
-        ctx.actor,
-      ),
-  },
-
-  {
-    definition: {
-      name: "get_my_carrier",
-      description:
-        "Fetch the carrier vehicle linked to the sender's account. Returns null if they aren't linked to one.",
-      input_schema: { type: "object", properties: {} },
-    },
-    handler: async (_input, ctx) => {
-      const user = requireUser(ctx, "get_my_carrier");
-      if (!user.carrier) return null;
-      return getCarrierById({ id: user.carrier.toString() }, ctx.actor);
-    },
-  },
-
-  {
-    definition: {
-      name: "update_carrier_status",
-      description:
-        "Update the status of the sender's linked carrier vehicle. Always targets the sender's own carrier — do not pass an id.",
-      input_schema: {
-        type: "object",
-        properties: {
-          status: {
-            type: "string",
-            enum: ["ON THE WAY", "LOADING", "WAITING", "UNLOADING"],
-          },
-        },
-        required: ["status"],
-      },
-    },
-    handler: async (input, ctx) => {
-      const user = requireUser(ctx, "update_carrier_status");
-      if (!user.carrier) {
-        const err = new Error(
-          "Your account isn't linked to a carrier vehicle. Ask staff to link one.",
-        );
-        err.code = "no_linked_carrier";
-        throw err;
-      }
-      return updateCarrier(
-        { id: user.carrier.toString(), status: input.status },
-        ctx.actor,
-      );
-    },
-  },
-
-  {
-    definition: {
-      name: "list_assets",
-      description:
-        "List assets (warehouses, vehicles, equipment), optionally filtered.",
-      input_schema: {
-        type: "object",
-        properties: {
-          type: {
-            type: "string",
-            enum: ["vehicle", "warehouse", "equipment"],
-          },
-          status: {
-            type: "string",
-            enum: ["active", "maintenance", "idle", "decommissioned"],
-          },
-          region: { type: "string" },
-        },
-      },
-    },
-    handler: (input, ctx) =>
-      getAssets(
-        {
-          type: input.type,
-          status: input.status,
-          region: input.region,
         },
         ctx.actor,
       ),

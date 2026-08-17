@@ -12,8 +12,6 @@ const transactionSchema = new mongoose.Schema({
   toMarket: { type: mongoose.Schema.Types.ObjectId, ref: "Market" },
   buyer: { type: String },
   seller: { type: String },
-  carrier: { type: mongoose.Schema.Types.ObjectId, ref: "Carrier" },
-  asset: { type: mongoose.Schema.Types.ObjectId, ref: "Asset" },
   notes: { type: String },
   status: {
     type: String,

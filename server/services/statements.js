@@ -11,14 +11,7 @@ import {
 // latest). They are now GENERATED from completed Payment records rather than
 // seeded by hand. Entries are heavy so the list endpoint strips them.
 
-// Business rule: from the platform owner's perspective a `sell` transaction is
-// income (money in) and a `buy` is an expense (money out). Flip this one line
-// if your accounting is the other way around.
 const isIncomeTxn = (txn) => txn?.type === "sell";
-
-/* ------------------------------------------------------------------ */
-/* Read surface (unchanged public behaviour)                          */
-/* ------------------------------------------------------------------ */
 
 export async function listStatements(params = {}, _actor) {
   const { limit } = parse(listStatementsSchema, params, "statement filter");
@@ -34,14 +27,10 @@ export async function getStatementById(params, _actor) {
     "entries.transaction",
     "transactionId commodity type",
   );
-  if (!stmt) throw notFound("Statement not found");
+  if (!stmt) throw notFound("That statement was not found. Kindly crosscheck your information");
   return stmt;
 }
 
-/**
- * Cross-statement trend for dashboard cards. Cheap because it selects only
- * headline numbers and skips the entries array entirely.
- */
 export async function getStatementTrend(months = 6) {
   return Statement.find({ month: { $exists: true } })
     .sort({ year: -1, month: -1 })
@@ -50,9 +39,6 @@ export async function getStatementTrend(months = 6) {
     .lean();
 }
 
-/* ------------------------------------------------------------------ */
-/* Generation                                                         */
-/* ------------------------------------------------------------------ */
 
 /**
  * Build (or rebuild) a statement for a given period from completed payments.

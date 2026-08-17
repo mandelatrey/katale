@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ROUTES } from '../routes';
-import { Users, Factory, CreditCard, Receipt, Truck, FileText, Settings, Bell, LogOut, ChevronDown, ChevronRight } from './Icons';
+import { Factory, CreditCard, Receipt, FileText, Settings, Bell, LogOut, ChevronDown, ChevronRight } from './Icons';
 import * as paymentsApi from '../api/payments.js';
 import IonIcon from './IonIcon';
 import {
@@ -24,10 +24,8 @@ const ShieldIcon = (p) => <IonIcon name="shield-checkmark-outline" {...p} />;
 
 const NAV_ITEMS = [
   { label: 'Commodities',  icon: Factory,          route: ROUTES.MAP },
-  { label: 'Carriers',     icon: Users,            route: ROUTES.CARRIERS },
   { label: 'Transactions', icon: CreditCard,       route: ROUTES.TRANSACTIONS },
   { label: 'Payments',     icon: Receipt,          route: ROUTES.PAYMENTS },
-  { label: 'Assets',       icon: Truck,            route: ROUTES.ASSETS },
   { label: 'Reports',      icon: FileText,         route: ROUTES.REPORTS },
   { label: 'Statements',   icon: FileText,         route: ROUTES.STATEMENTS },
 ];

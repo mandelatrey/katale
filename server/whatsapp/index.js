@@ -99,7 +99,7 @@ router.post("/webhook", async (req, res) => {
     const actionResult = await route({ message, user, session, actor });
     nextSession = actionResult.nextSession;
 
-    if (aiOn) {
+    if (aiEnabled()) {
       try {
         reply = await formatReplyAI(actionResult, {
           userMessage: message.text,

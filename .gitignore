@@ -28,6 +28,10 @@ Thumbs.db
 
 coverage/
 CLAUDE.md
+.claude/
+.codebase-map/
+.playwright-mcp/
+.impeccable.md
 server/.env
 
 .env

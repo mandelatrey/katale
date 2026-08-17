@@ -1,16 +1,14 @@
 /**
- * seedPages.js — seeds Assets, Transactions, Payments, Reports, Statements
+ * seedPages.js — seeds Transactions, Payments, Reports, and Statements.
  * Must run AFTER seed.js (depends on Market documents existing)
  */
 import "dotenv/config";
 import mongoose from "mongoose";
 import Market from "./models/Market.js";
-import Asset from "./models/Asset.js";
 import Transaction from "./models/Transaction.js";
 import Payment from "./models/Payment.js";
 import Report from "./models/Report.js";
 import Statement from "./models/Statement.js";
-import Carrier from "./models/Carrier.js";
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/uganda-markets";
 
@@ -30,12 +28,6 @@ const UGANDAN_NAMES = [
   "Byamukama David", "Tumusiime Moses", "Wasswa Joseph", "Nakato Sarah", "Kizza Emmanuel",
   "Amony Florence", "Nsubuga Peter", "Achen Christine", "Kaggwa Brian", "Atim Doreen",
   "Byaruhanga Fred", "Namutebi Joan", "Otim Kenneth", "Namukasa Lydia", "Lubega Martin",
-];
-
-const VEHICLE_MODELS = [
-  "Toyota Dyna", "Isuzu NQR", "Mercedes-Benz Sprinter", "Volkswagen Transporter",
-  "Volvo FL", "Mercedes-Benz Actros", "Isuzu ELF", "Mitsubishi Canter",
-  "Toyota Land Cruiser", "Ford Transit",
 ];
 
 const PAYMENT_PROVIDERS = {
@@ -74,76 +66,11 @@ async function seed() {
 
   // ── Clear collections ──────────────────────────────────────────────────────
   await Promise.all([
-    Asset.deleteMany({}),
     Transaction.deleteMany({}),
     Payment.deleteMany({}),
     Report.deleteMany({}),
     Statement.deleteMany({}),
-    Carrier.deleteMany({}),
   ]);
-
-  // ── ASSETS ─────────────────────────────────────────────────────────────────
-  const assetDocs = [];
-
-  // Vehicles
-  for (let i = 1; i <= 18; i++) {
-    const market = rand(markets);
-    assetDocs.push({
-      name: `${rand(VEHICLE_MODELS)} #${String(i).padStart(3, "0")}`,
-      type: "vehicle",
-      status: rand(["active", "active", "active", "maintenance", "idle"]),
-      market: market._id,
-      region: market.region,
-      assignedTo: rand(UGANDAN_NAMES),
-      capacity: rand([1500, 2000, 2500, 3000, 5000, 8000, 14000]),
-      value: randInt(25_000_000, 120_000_000),
-      acquiredAt: daysAgo(randInt(30, 730)),
-    });
-  }
-
-  // Warehouses
-  const warehouseRegions = ["Central", "Eastern", "Northern", "Western"];
-  const warehouseNames = [
-    "Kampala Central Storage", "Jinja Grain Depot", "Gulu Northern Hub",
-    "Mbarara Western Silo", "Mbale Eastern Warehouse", "Lira Distribution Center",
-    "Kasese Produce Store", "Masaka Regional Depot",
-  ];
-  for (let i = 0; i < warehouseNames.length; i++) {
-    const market = rand(markets);
-    assetDocs.push({
-      name: warehouseNames[i],
-      type: "warehouse",
-      status: rand(["active", "active", "active", "maintenance"]),
-      market: market._id,
-      region: rand(warehouseRegions),
-      assignedTo: rand(UGANDAN_NAMES),
-      capacity: randInt(50, 500), // metric tons
-      value: randInt(80_000_000, 500_000_000),
-      acquiredAt: daysAgo(randInt(180, 1460)),
-    });
-  }
-
-  // Equipment
-  const equipmentNames = [
-    "Weighbridge Scale A", "Grain Moisture Meter", "Sorting Machine #1",
-    "Packaging Unit B", "Forklift #2", "Weighbridge Scale B",
-  ];
-  for (const name of equipmentNames) {
-    const market = rand(markets);
-    assetDocs.push({
-      name,
-      type: "equipment",
-      status: rand(["active", "active", "maintenance", "idle"]),
-      market: market._id,
-      region: market.region,
-      assignedTo: rand(UGANDAN_NAMES),
-      capacity: null,
-      value: randInt(5_000_000, 40_000_000),
-      acquiredAt: daysAgo(randInt(60, 900)),
-    });
-  }
-
-  await Asset.insertMany(assetDocs);
 
   // ── TRANSACTIONS ───────────────────────────────────────────────────────────
   const txnDocs = [];
@@ -322,7 +249,7 @@ async function seed() {
     regional_summary: (r) => `${r.region} Regional Summary — ${r.period}`,
   };
 
-  extraReports.forEach((r, i) => {
+  extraReports.forEach((r) => {
     reportDocs.push({
       reportId: `RPT-${String(reportDocs.length + 1).padStart(3, "0")}`,
       title: titleMap[r.type](r),
@@ -421,44 +348,6 @@ async function seed() {
   }
 
   await Statement.insertMany(statementDocs);
-
-  // ── CARRIERS ───────────────────────────────────────────────────────────────
-  const UGANDAN_ROUTES_COORDS = [
-    { from: 'Kampala Central Market', to: 'Gulu Main Market',       distKm: 338, packages: 124, fromCoords: [32.5825, 0.3167], toCoords: [32.2975, 2.7745] },
-    { from: 'Owino Market, Kampala',  to: 'Mbale Produce Market',   distKm: 217, packages: 86,  fromCoords: [32.5616, 0.3070], toCoords: [34.1750, 1.0800] },
-    { from: 'Nakasero Market',        to: 'Mbarara Central Market',  distKm: 272, packages: 107, fromCoords: [32.5814, 0.3204], toCoords: [30.6588, -0.6067] },
-    { from: 'St. Balikuddembe Market',to: 'Lira Market',             distKm: 342, packages: 93,  fromCoords: [32.5600, 0.3098], toCoords: [32.9000, 2.2499] },
-    { from: 'Kalerwe Market',         to: 'Masaka Main Market',      distKm: 138, packages: 71,  fromCoords: [32.5749, 0.3389], toCoords: [31.7320, -0.3350] },
-    { from: 'Wandegeya Market',       to: 'Jinja Main Market',       distKm: 81,  packages: 58,  fromCoords: [32.5748, 0.3394], toCoords: [33.2042, 0.4244] },
-    { from: 'Bugolobi Market',        to: 'Fort Portal Market',      distKm: 301, packages: 115, fromCoords: [32.6144, 0.3222], toCoords: [30.2758, 0.6579] },
-    { from: 'Nakawa Market',          to: 'Kabale Market',           distKm: 413, packages: 99,  fromCoords: [32.6267, 0.3294], toCoords: [29.9886, -1.2529] },
-    { from: 'Kikuubo Market',         to: 'Arua Market',             distKm: 479, packages: 132, fromCoords: [32.5771, 0.3153], toCoords: [30.9109, 3.0248] },
-    { from: 'Ntinda Market',          to: 'Soroti Market',           distKm: 315, packages: 88,  fromCoords: [32.6103, 0.3500], toCoords: [33.6108, 1.7153] },
-    { from: 'Nateete Market',         to: 'Tororo Market',           distKm: 193, packages: 76,  fromCoords: [32.5430, 0.2980], toCoords: [34.1800, 0.6927] },
-  ];
-
-  const carrierDocs = [
-    { name: 'Okello James',    phone: '+256 772 481 203', role: 'driver', status: 'ON THE WAY', category: 'Favorites', vehicleModel: 'Volkswagen Transporter',  vehicleType: 'Van',   specs: { payload: '2,885 lbs',  volume: '353,937 in³',   length: '117 in', width: '67 in',  plate: 'UAU 823F' } },
-    { name: 'Mugisha Samuel',  phone: '+256 701 334 556', role: 'driver', status: 'ON THE WAY', category: 'Favorites', vehicleModel: 'Mercedes-Benz Sprinter',  vehicleType: 'Van',   specs: { payload: '3,814 lbs',  volume: '319,000 in³',   length: '144 in', width: '70 in',  plate: 'UBD 014K' } },
-    { name: 'Akello Grace',    phone: '+256 755 920 178', role: 'driver', status: 'LOADING',    category: 'Favorites', vehicleModel: 'Isuzu NQR',               vehicleType: 'Van',   specs: { payload: '2,885 lbs',  volume: '353,937 in³',   length: '117 in', width: '67 in',  plate: 'UBG 447H' } },
-    { name: 'Ochieng Patrick', phone: '+256 782 645 091', role: 'driver', status: 'WAITING',    category: 'Favorites', vehicleModel: 'Toyota Dyna',             vehicleType: 'Van',   specs: { payload: '2,500 lbs',  volume: '250,000 in³',   length: '111 in', width: '65 in',  plate: 'UBH 339J' } },
-    { name: 'Ssali Robert',    phone: '+256 703 117 462', role: 'driver', status: 'ON THE WAY', category: 'Trucks',    vehicleModel: 'Volvo FL',                vehicleType: 'Truck', specs: { payload: '14,000 lbs', volume: '1,200,000 in³', length: '240 in', width: '96 in',  plate: 'UCA 551M' } },
-    { name: 'Byamukama David', phone: '+256 776 803 374', role: 'driver', status: 'WAITING',    category: 'Trucks',    vehicleModel: 'Mercedes-Benz Actros',    vehicleType: 'Truck', specs: { payload: '16,000 lbs', volume: '1,400,000 in³', length: '260 in', width: '96 in',  plate: 'UCB 706N' } },
-    { name: 'Tumusiime Moses', phone: '+256 752 290 815', role: 'driver', status: 'ON THE WAY', category: 'Trucks',    vehicleModel: 'Volvo FL',                vehicleType: 'Truck', specs: { payload: '14,000 lbs', volume: '1,200,000 in³', length: '240 in', width: '96 in',  plate: 'UCC 182P' } },
-    { name: 'Wasswa Joseph',   phone: '+256 714 563 047', role: 'driver', status: 'UNLOADING',  category: 'Trucks',    vehicleModel: 'Volvo FH',                vehicleType: 'Truck', specs: { payload: '44,000 lbs', volume: '2,500,000 in³', length: '500 in', width: '102 in', plate: 'UCD 073Q' } },
-    { name: 'Nakato Sarah',    phone: '+256 783 451 629', role: 'driver', status: 'LOADING',    category: 'Vans',      vehicleModel: 'Mitsubishi Canter',       vehicleType: 'Van',   specs: { payload: '2,885 lbs',  volume: '353,937 in³',   length: '117 in', width: '67 in',  plate: 'UCF 920R' } },
-    { name: 'Kizza Emmanuel',  phone: '+256 701 738 254', role: 'driver', status: 'ON THE WAY', category: 'Vans',      vehicleModel: 'Isuzu ELF',               vehicleType: 'Van',   specs: { payload: '3,814 lbs',  volume: '319,000 in³',   length: '144 in', width: '70 in',  plate: 'UCG 261S' } },
-    { name: 'Amony Florence',  phone: '+256 775 094 483', role: 'driver', status: 'ON THE WAY', category: 'Vans',      vehicleModel: 'Toyota Dyna',             vehicleType: 'Van',   specs: { payload: '2,500 lbs',  volume: '250,000 in³',   length: '111 in', width: '65 in',  plate: 'UCH 514T' } },
-  ].map((c, i) => ({
-    ...c,
-    activeRoute: UGANDAN_ROUTES_COORDS[i % UGANDAN_ROUTES_COORDS.length],
-    historyRoutes: [
-      UGANDAN_ROUTES_COORDS[(i + 1) % UGANDAN_ROUTES_COORDS.length],
-      UGANDAN_ROUTES_COORDS[(i + 3) % UGANDAN_ROUTES_COORDS.length],
-    ],
-  }));
-
-  await Carrier.insertMany(carrierDocs);
 
   await mongoose.disconnect();
 }

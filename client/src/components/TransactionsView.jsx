@@ -3,8 +3,6 @@ import { CreditCard, Package, ArrowUpRight, ArrowDownRight, Plus, X } from './Ic
 import { commodities } from '../constants';
 import Tooltip from './Tooltip';
 import * as marketsApi from '../api/markets.js';
-import * as carriersApi from '../api/carriers.js';
-import * as assetsApi from '../api/assets.js';
 import * as transactionsApi from '../api/transactions.js';
 
 const UGX_TO_USD = 3700;
@@ -88,28 +86,20 @@ const labelStyle = { fontSize: 11, fontWeight: 600, color: '#6b7280', textTransf
 
 function AddTransactionModal({ onClose, onCreated }) {
   const [markets, setMarkets]   = useState([]);
-  const [carriers, setCarriers] = useState([]);
-  const [assets, setAssets]     = useState([]);
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState(null);
 
   const [form, setForm] = useState({
     type: 'buy', commodity: 'maize', quantity: '', unitPrice: '',
     fromMarket: '', toMarket: '', buyer: '', seller: '',
-    carrier: '', asset: '', status: 'pending', notes: '',
+    status: 'pending', notes: '',
     paymentMethod: '', paymentProvider: '',
   });
 
   useEffect(() => {
-    Promise.all([
-      marketsApi.listMarkets(),
-      carriersApi.listCarriers(),
-      assetsApi.listAssets(),
-    ]).then(([m, c, a]) => {
-      setMarkets(Array.isArray(m) ? m : []);
-      setCarriers(Array.isArray(c) ? c : []);
-      setAssets(Array.isArray(a) ? a : []);
-    }).catch(() => {});
+    marketsApi.listMarkets()
+      .then((m) => setMarkets(Array.isArray(m) ? m : []))
+      .catch(() => {});
   }, []);
 
   function set(key, val) {
@@ -136,8 +126,6 @@ function AddTransactionModal({ onClose, onCreated }) {
         toMarket:   form.toMarket   || undefined,
         buyer:   form.buyer   || undefined,
         seller:  form.seller  || undefined,
-        carrier: form.carrier || undefined,
-        asset:   form.asset   || undefined,
         status:  form.status,
         notes:   form.notes   || undefined,
         paymentMethod:   form.paymentMethod   || undefined,
@@ -233,32 +221,6 @@ function AddTransactionModal({ onClose, onCreated }) {
             <div>
               <label style={labelStyle}>Seller</label>
               <input style={inputStyle} type="text" placeholder="Seller name" value={form.seller} onChange={e => set('seller', e.target.value)} />
-            </div>
-          </div>
-
-          {/* Carrier & Asset */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={labelStyle}>Carrier (Driver)</label>
-              <select style={inputStyle} value={form.carrier} onChange={e => set('carrier', e.target.value)}>
-                <option value="">— No carrier assigned —</option>
-                {carriers.map(c => (
-                  <option key={c._id} value={c._id}>
-                    {c.name} · {c.vehicleModel || c.vehicleType}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Asset (Vehicle/Equipment)</label>
-              <select style={inputStyle} value={form.asset} onChange={e => set('asset', e.target.value)}>
-                <option value="">— No asset assigned —</option>
-                {assets.filter(a => a.status !== 'decommissioned').map(a => (
-                  <option key={a._id} value={a._id}>
-                    {a.name} ({a.type})
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 
@@ -460,7 +422,6 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
                       {(t.fromMarket?.name || t.toMarket?.name) && (
                         <span> · {t.fromMarket?.name || '?'} → {t.toMarket?.name || '?'}</span>
                       )}
-                      {t.carrier?.name && <span> · {t.carrier.name}</span>}
                     </div>
                   </div>
                 );
@@ -484,7 +445,6 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
                   { h: 'Unit Price', tip: 'The price per kilogram at the time of the trade' },
                   { h: 'Total',      tip: 'The total money value of this trade' },
                   { h: 'Route',      tip: 'Where the goods came from and where they went' },
-                  { h: 'Carrier',    tip: 'The driver or vehicle that transported the goods' },
                   { h: 'Status',     tip: 'Where this trade is in the process — agreed, on the road, or delivered' },
                 ].map(({ h, tip }) => (
                   <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-bold)', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>
@@ -497,7 +457,7 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
               {loading ? (
                 Array(8).fill(0).map((_, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid #f9fafb' }}>
-                    {Array(10).fill(0).map((_, j) => (
+                    {Array(9).fill(0).map((_, j) => (
                       <td key={j} style={{ padding: '12px 16px' }}>
                         <div className="dash-skeleton" style={{ height: 14, borderRadius: 4, width: j === 0 ? 90 : 70 }} />
                       </td>
@@ -505,7 +465,7 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 32, color: '#9ca3af' }}>No transactions found</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 32, color: '#9ca3af' }}>No transactions found</td></tr>
               ) : (
                 filtered.map(t => {
                   const comm = commodities.find(c => c.key === t.commodity);
@@ -530,13 +490,6 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
                       </td>
                       <td style={{ padding: '12px 16px', color: 'var(--gray-500)', fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>
                         {t.fromMarket?.name || '—'} → {t.toMarket?.name || '—'}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontSize: 'var(--text-xs)', color: 'var(--gray-600)', whiteSpace: 'nowrap' }}>
-                        {t.carrier ? (
-                          <span title={t.carrier.vehicleModel}>{t.carrier.name}</span>
-                        ) : (
-                          <span style={{ color: '#d1d5db' }}>—</span>
-                        )}
                       </td>
                       <td style={{ padding: '12px 16px' }}><Badge value={t.status} map={STATUS_COLORS} /></td>
                     </tr>

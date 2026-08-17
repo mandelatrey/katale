@@ -2,8 +2,6 @@ import { parseIntent } from "./intents/parse.js";
 import { listLatestPrices } from "../services/commodities.js";
 import { listMarkets, listNearbyMarkets } from "../services/markets.js";
 import { listPayments } from "../services/payments.js";
-import { listCarriers, updateCarrier } from "../services/carriers.js";
-import { listAssets } from "../services/assets.js";
 import { listStatements } from "../services/statements.js";
 import { updateTransaction } from "../services/transactions.js";
 import User from "../models/User.js";
@@ -43,19 +41,6 @@ export async function route(ctx) {
 
       case "list_pending_payments":
         return await handlePendingPayments(actor);
-
-      case "list_my_carriers":
-        return await handleListCarriers(actor);
-
-      case "update_carrier_status":
-        return await handleUpdateCarrierStatus(
-          intent.args ?? {},
-          user,
-          actor,
-        );
-
-      case "list_my_assets":
-        return await handleListAssets(actor);
 
       case "latest_statement":
         return await handleLatestStatement(actor);
@@ -228,38 +213,6 @@ async function handleNearbyMarkets(args, actor) {
 async function handlePendingPayments(actor) {
   const payments = await listPayments({ status: "pending", limit: 5 }, actor);
   return { kind: "list_pending_payments", payments, nextSession: IDLE };
-}
-
-async function handleListCarriers(actor) {
-  const carriers = await listCarriers({}, actor);
-  return { kind: "list_my_carriers", carriers, nextSession: IDLE };
-}
-
-async function handleUpdateCarrierStatus(args, user, actor) {
-  if (!user?.carrier) {
-    return {
-      kind: "error",
-      message:
-        "Your account isn't linked to a carrier vehicle. Ask an admin to link one.",
-      nextSession: IDLE,
-    };
-  }
-  if (!args.status) {
-    return {
-      kind: "prompt_carrier_status",
-      nextSession: { state: "awaiting_carrier_status", data: {} },
-    };
-  }
-  const carrier = await updateCarrier(
-    { id: user.carrier.toString(), status: args.status },
-    actor,
-  );
-  return { kind: "update_carrier_status", carrier, nextSession: IDLE };
-}
-
-async function handleListAssets(actor) {
-  const assets = await listAssets({}, actor);
-  return { kind: "list_my_assets", assets, nextSession: IDLE };
 }
 
 async function handleLatestStatement(actor) {

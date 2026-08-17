@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-// A single User covers every actor in the system: brokers, carriers,
-// farmers, Agribridge staff. Phone number (E.164) is the stable identity
-// used to resolve WhatsApp messages to a user.
+// A single User covers every actor in the system: brokers, farmers,
+// Agribridge staff. Phone number (E.164) is the stable identity used to
+// resolve WhatsApp messages to a user.
 //
 // Today the web app has no auth; once web auth lands, sessions will
 // populate `createdBy` / `actorUserId` on mutations the same way the
@@ -21,25 +21,16 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["farmer", "broker", "carrier", "staff", "admin"],
+      enum: ["farmer", "broker", "staff", "admin"],
       default: "farmer",
     },
     // Hashed password — only set for admin users (farmers authenticate via WhatsApp/phone).
     passwordHash: { type: String, select: false },
-    // Optional — links this user to a Carrier record so a carrier driver's
-    // WhatsApp messages update their own vehicle status without having to
-    // specify an id.
-    carrier: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Carrier",
-    },
     active: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
     // Granular permissions for staff/team members — ignored for admin/farmer roles
     permissions: {
       canViewCommodities:  { type: Boolean, default: true },
-      canViewCarriers:     { type: Boolean, default: true },
-      canViewAssets:       { type: Boolean, default: false },
       canViewTransactions: { type: Boolean, default: false },
       canViewPayments:     { type: Boolean, default: false },
       canViewReports:      { type: Boolean, default: false },

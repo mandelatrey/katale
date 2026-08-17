@@ -9,7 +9,6 @@ import {
 } from "../whatsapp/sessions.js";
 import Market from "../models/Market.js";
 import Price from "../models/Price.js";
-import Carrier from "../models/Carrier.js";
 import Payment from "../models/Payment.js";
 import Transaction from "../models/Transaction.js";
 import { hasMongo } from "./setup.js";
@@ -45,26 +44,13 @@ describe("whatsapp intent parser", () => {
     });
   });
 
-  it("maps payment / asset / carrier / statement keywords", () => {
+  it("maps payment / statement keywords", () => {
     expect(parseIntent("pending payments", null).kind).toBe(
       "list_pending_payments",
     );
-    expect(parseIntent("my carriers", null).kind).toBe("list_my_carriers");
-    expect(parseIntent("my assets", null).kind).toBe("list_my_assets");
     expect(parseIntent("latest statement", null).kind).toBe(
       "latest_statement",
     );
-  });
-
-  it("maps carrier status phrases", () => {
-    expect(parseIntent("status on the way", null)).toEqual({
-      kind: "update_carrier_status",
-      args: { status: "ON THE WAY" },
-    });
-    expect(parseIntent("set status loading", null)).toEqual({
-      kind: "update_carrier_status",
-      args: { status: "LOADING" },
-    });
   });
 
   it("uses session state to interpret a follow-up reply", () => {
@@ -121,7 +107,7 @@ describe("whatsapp router (no DB paths)", () => {
 
 describe.skipIf(!hasMongo())("whatsapp router (DB-backed)", () => {
   beforeEach(async () => {
-    // seed a market + a price + a carrier + a pending payment
+    // seed a market + a price + a pending payment
     const market = await Market.create({
       name: "Nakasero",
       location: { type: "Point", coordinates: [32.5825, 0.3476] },
@@ -135,11 +121,6 @@ describe.skipIf(!hasMongo())("whatsapp router (DB-backed)", () => {
       unit: "kg",
       currency: "UGX",
       priceType: "retail",
-    });
-    await Carrier.create({
-      name: "KLA-01",
-      vehicleModel: "Hino 300",
-      status: "WAITING",
     });
     const txn = await Transaction.create({
       transactionId: "TXN-00001",
@@ -195,28 +176,6 @@ describe.skipIf(!hasMongo())("whatsapp router (DB-backed)", () => {
     expect(result.kind).toBe("list_pending_payments");
     expect(result.payments).toHaveLength(1);
     expect(formatReply(result)).toMatch(/TXN-00001/);
-  });
-
-  it("refuses to update a carrier status for an unlinked user", async () => {
-    const result = await route({
-      message: { fromPhoneE164: "+256700000001", text: "set status loading" },
-      user: { carrier: null },
-      session: null,
-      actor: { userId: null, source: "whatsapp" },
-    });
-    expect(result.kind).toBe("error");
-  });
-
-  it("updates a carrier status when the user is linked", async () => {
-    const carrier = await Carrier.findOne({ name: "KLA-01" });
-    const result = await route({
-      message: { fromPhoneE164: "+256700000001", text: "set status loading" },
-      user: { carrier: carrier._id },
-      session: null,
-      actor: { userId: null, source: "whatsapp" },
-    });
-    expect(result.kind).toBe("update_carrier_status");
-    expect(result.carrier.status).toBe("LOADING");
   });
 
   it("cancels a transaction by id", async () => {

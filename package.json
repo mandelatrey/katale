@@ -12,7 +12,8 @@
     "ngrok": "node scripts/ngrok.mjs",
     "whatsapp:simulate": "cd server && npm run whatsapp:simulate --",
     "seed": "cd server && npm run seed",
-    "seed:pages": "cd server && node seedPages.js"
+    "seed:pages": "cd server && node seedPages.js",
+    "arch:generate": "node scripts/generateArchitecture.mjs"
   },
   "devDependencies": {
     "@ngrok/ngrok": "^1.4.1",

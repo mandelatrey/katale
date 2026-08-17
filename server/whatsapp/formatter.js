@@ -72,9 +72,6 @@ export function formatReply(result) {
     case "prompt_location":
       return 'Share your location, or reply with coordinates as "lat,lng" (e.g. 0.3476,32.5825).';
 
-    case "prompt_carrier_status":
-      return "What's the new status? Reply: ON THE WAY, LOADING, WAITING, or UNLOADING.";
-
     case "price_check":
       return formatPrices(result);
 
@@ -86,15 +83,6 @@ export function formatReply(result) {
 
     case "list_pending_payments":
       return formatPendingPayments(result.payments);
-
-    case "list_my_carriers":
-      return formatCarriers(result.carriers);
-
-    case "update_carrier_status":
-      return `Carrier ${result.carrier?.name ?? ""} is now ${result.carrier?.status ?? "updated"}.`.trim();
-
-    case "list_my_assets":
-      return formatUserAssets(result.assets);
 
     case "latest_statement":
       return formatUserStatement(result.statement);
@@ -160,26 +148,6 @@ function formatPendingPayments(payments) {
     return `• ${txn}: ${fmtMoney(p.amount, p.currency)} via ${p.method}`;
   });
   return ["Pending payments:", ...lines].join("\n");
-}
-
-function formatCarriers(carriers) {
-  if (!carriers?.length) return "No carriers registered.";
-  const lines = carriers.slice(0, 10).map((c) => {
-    const veh = c.vehicleModel ? ` (${c.vehicleModel})` : "";
-    return `• ${c.name}${veh} — ${c.status}`;
-  });
-  const footer = carriers.length > 10 ? `\n…and ${carriers.length - 10} more.` : "";
-  return ["Carriers available:", ...lines].join("\n") + footer;
-}
-
-function formatUserAssets(assets) {
-  if (!assets?.length) return "No assets registered.";
-  const lines = assets.slice(0, 10).map((a) => {
-    const loc = a.market?.name ? ` @ ${a.market.name}` : "";
-    return `• ${a.name} [${a.type}]${loc} — ${a.status}`;
-  });
-  const footer = assets.length > 10 ? `\n…and ${assets.length - 10} more.` : "";
-  return ["Your assets:", ...lines].join("\n") + footer;
 }
 
 function formatUserStatement(stmt) {

@@ -21,8 +21,7 @@ WhatsApp webhook share the same API layer.
 | `_id`        | ObjectId                                             |
 | `name`       | required                                             |
 | `phoneE164`  | required, unique, indexed — primary identity         |
-| `role`       | `farmer` / `broker` / `carrier` / `staff`            |
-| `carrier`    | optional ref to a Carrier record (for driver users)  |
+| `role`       | `farmer` / `broker` / `staff` / `admin`              |
 | `active`     | bool, defaults true                                  |
 | `createdAt`  | Date                                                 |
 
@@ -39,7 +38,6 @@ All nullable, all backwards-compatible with existing seeded data.
 | ------------- | ------------------------------------------- |
 | `Transaction` | `createdBy`, `buyerUser`, `sellerUser`      |
 | `Payment`     | `paidByUser`, `paidToUser`                  |
-| `Carrier`     | `owner`, `createdBy`                        |
 
 The existing string fields (`buyer`, `seller`, `paidBy`, `paidTo`) stay:
 they're human display labels and the current seed scripts populate them.
@@ -59,8 +57,6 @@ Phase 1 wired the `actor` parameter through — Phase 2+ enforces it.
 | `Statement`   | public                 | staff                       | staff                               | staff                               |
 | `Transaction` | public (today)         | any authenticated actor     | `createdBy === actor` OR staff      | `createdBy === actor` OR staff      |
 | `Payment`     | public (today)         | internal (auto on txn POST) | staff only                          | staff only                          |
-| `Carrier`     | public                 | staff OR role:carrier       | `owner === actor` OR staff          | staff only                          |
-| `Asset`       | public                 | staff                       | staff                               | staff                               |
 | `User`        | self + staff           | self-signup via WhatsApp    | self + staff                        | staff only                          |
 
 "public" = any actor, including anonymous. Today's behaviour.
@@ -93,5 +89,5 @@ ownership checks.
 
 `server/scripts/addUsers.js` — run with `npm run migrate:users`. It is
 idempotent: creates the `users` collection, syncs new indexes on
-Transaction / Payment / Carrier, and optionally seeds 3 demo users when
+Transaction / Payment, and optionally seeds 2 demo users when
 `RUN_DEV_SEED=1`.

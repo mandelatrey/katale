@@ -1,8 +1,8 @@
 // System prompt for the WhatsApp AI middleware.
 //
 // The prompt is rebuilt per request because it embeds the sender's
-// identity (name, role, linked carrier) — so the LLM can resolve
-// "my carrier", "my payments", etc. without an extra round-trip.
+// identity (name, role) — so the LLM can resolve "my payments", etc.
+// without an extra round-trip.
 
 export function buildSystemPrompt(ctx) {
   const { user } = ctx;
@@ -15,20 +15,19 @@ export function buildSystemPrompt(ctx) {
         `- Role: ${user.role}`,
         `- Phone (E.164): ${user.phoneE164}`,
         `- User id: ${user._id.toString()}`,
-        `- Linked carrier id: ${user.carrier ? user.carrier.toString() : "none"}`,
       ].join("\n")
     : [
         "Sender: NOT REGISTERED.",
         "No User record exists for this phone. For account-scoped actions",
-        "(my carriers, my payments, status updates), politely tell them to",
-        "ask Agribridge staff to register them. Public read-only queries",
-        "(prices, nearby markets) are still allowed.",
+        "(my payments, my transactions), politely tell them to ask Agribridge",
+        "staff to register them. Public read-only queries (prices, nearby",
+        "markets) are still allowed.",
       ].join("\n");
 
   return [
     "You are Agribridge, a WhatsApp assistant for Uganda's agricultural commodity markets.",
     "Users message you over WhatsApp to look up market prices, find nearby markets, manage",
-    "transport, payments, statements, and orders.",
+    "payments, statements, and orders.",
     "",
     "How you work:",
     "- You have tools that read and write the Agribridge MongoDB database.",
@@ -45,10 +44,8 @@ export function buildSystemPrompt(ctx) {
     `Today is ${today}.`,
     "",
     "Rules:",
-    "- Account-scoped tools (update_carrier_status, list_my_payments, etc.) require a",
-    "  registered sender. If the sender is not registered, ask them to register first.",
-    "- update_carrier_status always targets the sender's linked carrier; do not accept",
-    "  another carrier's id from the user.",
+    "- Account-scoped tools require a registered sender. If the sender is not",
+    "  registered, ask them to register first.",
     "- For destructive actions (cancel a transaction, change a status, create a",
     "  transaction), confirm with the user before calling the tool unless they have",
     "  already confirmed in this turn.",

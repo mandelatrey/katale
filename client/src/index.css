@@ -1569,94 +1569,6 @@ body {
   animation: spin 0.7s linear infinite;
 }
 
-.carrier-ops-layout {
-  display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-  gap: 14px;
-}
-
-.carrier-ops-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 470px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.carrier-ops-item {
-  width: 100%;
-  border: 1px solid #eef0f2;
-  border-radius: 10px;
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  cursor: pointer;
-  transition: all .15s ease;
-  font-family: inherit;
-}
-
-.carrier-ops-item:hover {
-  border-color: var(--green-200);
-  background: var(--green-50);
-}
-
-.carrier-ops-detail {
-  border: 1px solid #f1f3f5;
-  border-radius: 12px;
-  padding: 14px;
-  background: #fff;
-}
-
-.carrier-ops-hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.carrier-ops-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.carrier-ops-metric-card {
-  border: 1px solid #f3f4f6;
-  border-radius: 10px;
-  background: #fafafa;
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.carrier-ops-metric-label {
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-medium);
-  color: var(--gray-400);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  margin-bottom: 2px;
-}
-
-.carrier-ops-metric-value {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--gray-900);
-  font-family: var(--font-mono);
-}
-
-.carrier-ops-bottom {
-  display: grid;
-  grid-template-columns: 1.3fr .9fr;
-  gap: 10px;
-}
-
 /* ─── IBM Plex Mono — Price Typography ─────────────────────────────────────── */
 .price-mono {
   font-family: var(--font-mono);
@@ -1731,27 +1643,6 @@ body {
     min-width: 0 !important;
     padding: 14px;
     border-radius: 12px;
-  }
-
-  .carrier-ops-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .carrier-ops-list {
-    max-height: 250px;
-  }
-
-  .carrier-ops-hero {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .carrier-ops-metrics {
-    grid-template-columns: 1fr;
-  }
-
-  .carrier-ops-bottom {
-    grid-template-columns: 1fr;
   }
 
   /* ─── Mobile Card List (replaces tables on mobile) ─── */

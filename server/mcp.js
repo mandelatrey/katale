@@ -1,19 +1,6 @@
 /**
  * MCP-callable service functions — importable from plain Node without Express or React context.
  *
- * carriers:
- *   getCarriers(filters)        — list carriers with optional search/category/status filters
- *   getCarrierStats()           — aggregated carrier status/category distribution + total count
- *   getCarrierById(id)          — single carrier by MongoDB ID
- *   createCarrier(data)         — create a new carrier document
- *   updateCarrier(id, data)     — update carrier fields by ID
- *   deleteCarrier(id)           — delete carrier by ID
- *
- * assets:
- *   getAssets(filters)          — list assets with optional type/status/region filters
- *   getAssetStats()             — aggregated asset type/status counts + total value
- *   getAssetById(id)            — single asset by MongoDB ID
- *
  * markets:
  *   getMarkets(filters)         — list markets with optional region/district/marketType filters
  *   getMarketById(id)           — single market by MongoDB ID
@@ -50,21 +37,6 @@
  *   getReports(filters)         — list market reports with optional type/region/limit filters
  *   getReportById(id)           — single report by MongoDB ID
  */
-
-export {
-  listCarriers as getCarriers,
-  getCarrierStats,
-  getCarrierById,
-  createCarrier,
-  updateCarrier,
-  deleteCarrier,
-} from "./services/carriers.js";
-
-export {
-  listAssets as getAssets,
-  getAssetStats,
-  getAssetById,
-} from "./services/assets.js";
 
 export {
   listMarkets as getMarkets,

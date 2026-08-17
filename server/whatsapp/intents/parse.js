@@ -77,35 +77,14 @@ const INTENTS = [
     },
   },
   {
-    kind: "update_carrier_status",
-    match: (t) =>
-      /\b(set|update)\s+(status|carrier)\b/i.test(t) ||
-      /\bstatus\s+(to\s+)?(on\s+the\s+way|loading|waiting|unloading)\b/i.test(t),
-    score: 6,
-    extract: (_m, t) => {
-      const status = parseCarrierStatus(t);
-      return status ? { status } : {};
-    },
-  },
-  {
     kind: "list_pending_payments",
     match: (t) => /\bpending\s+payments?\b|\bpayments?\s+pending\b/i.test(t),
     score: 6,
   },
   {
-    kind: "list_my_carriers",
-    match: (t) => /\b(my\s+)?(carriers?|trucks?|vans?|vehicles?)\b/i.test(t),
-    score: 5,
-  },
-  {
     kind: "latest_statement",
     match: (t) => /\b(statements?|balance)\b/i.test(t),
     score: 5,
-  },
-  {
-    kind: "list_my_assets",
-    match: (t) => /\b(my\s+)?(assets?|inventory|warehouses?)\b/i.test(t),
-    score: 4,
   },
 ];
 
@@ -171,10 +150,6 @@ function matchSessionFollowup(state, raw) {
     case "awaiting_nearby_location": {
       const coords = parseCoords(raw);
       return coords ? { kind: "nearby_markets", args: coords } : null;
-    }
-    case "awaiting_carrier_status": {
-      const status = parseCarrierStatus(lower);
-      return status ? { kind: "update_carrier_status", args: { status } } : null;
     }
     case "awaiting_order_confirmation": {
       if (/^yes\s*$/i.test(raw)) return { kind: "confirm_yes" };
@@ -262,11 +237,3 @@ function parseCoords(text) {
   return null;
 }
 
-function parseCarrierStatus(lower) {
-  if(!lower) return undefined;
-  if (/\bon\s+the\s+way\b/.test(lower)) return "ON THE WAY";
-  if (/\bunloading\b/.test(lower)) return "UNLOADING";
-  if (/\bloading\b/.test(lower)) return "LOADING";
-  if (/\bwaiting\b/.test(lower)) return "WAITING";
-  return null;
-}

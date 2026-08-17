@@ -306,7 +306,7 @@ export default function AuthScreen({ onLogin, onSignup }) {
               Agricultural intelligence<br />for Uganda's markets.
             </div>
             <p className="auth-tagline">
-              Real-time commodity prices, carrier tracking, payments, and WhatsApp alerts — built for farmers and agribusiness operators.
+              Real-time commodity prices, transaction tracking, payments, and WhatsApp alerts — built for farmers and agribusiness operators.
             </p>
           </div>
           <div className="auth-features">

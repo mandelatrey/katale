@@ -5,6 +5,7 @@ import { listReportsSchema, reportIdSchema } from "./schemas/reports.js";
 
 // Reports are read-only today — they are produced offline by seedInsights/seed
 // scripts and surfaced in the UI and via WhatsApp.
+//TODO: Work on this!!!
 
 export async function listReports(params = {}, _actor) {
   const { type, region, limit } = parse(listReportsSchema, params, "report filter");

@@ -75,10 +75,10 @@ just the API + client without the WhatsApp stack.
 
 ## WhatsApp integration — prep status
 
-Work-in-progress scaffolding to let brokers, carriers, and farmers hit
-the same API from WhatsApp (Twilio sandbox → Meta Cloud API). **Nothing
-is live yet** — there are no outbound messages and no provider
-credentials in the tree.
+Work-in-progress scaffolding to let brokers and farmers hit the same
+API from WhatsApp (Twilio sandbox → Meta Cloud API). **Nothing is live
+yet** — there are no outbound messages and no provider credentials in
+the tree.
 
 What's in place:
 

@@ -20,14 +20,13 @@ import { Style, Circle, Fill, Stroke, Icon } from 'ol/style';
 import Popup from './components/Popup';
 import MarketList from './components/MarketList';
 import NavigationSidebar from './components/NavigationSidebar';
-import AssetsView from './components/AssetsView';
 import TransactionsView from './components/TransactionsView';
 import PaymentsView from './components/PaymentsView';
 import ReportsView from './components/ReportsView';
 import StatementsView from './components/StatementsView';
-import CarriersView from './components/CarriersView';
 import UsersView from './components/UsersView';
 import AccountModal from './components/AccountModal';
+import ArchitectureView from './components/ArchitectureView';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -38,7 +37,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuCheckboxItem,
 } from './components/ui/dropdown-menu';
-import { ChevronDown, List, Navigation, TriangleAlert, MapPin, Store, Leaf, Receipt, MoreHorizontal, Truck, Package, CreditCard, BarChart2, FileText, Users, Bell, Settings, LogOut } from './components/Icons';
+import { ChevronDown, List, Navigation, TriangleAlert, MapPin, Store, Leaf, Receipt, MoreHorizontal, CreditCard, BarChart2, FileText, Users, Bell, Settings, LogOut } from './components/Icons';
 import { commodities, regions } from './constants';
 import { useIsMobile } from './hooks/use-mobile';
 import * as marketsApi from './api/markets.js';
@@ -381,6 +380,9 @@ function App() {
   const currentCommodity = commodities.find(c => c.key === selectedCommodity);
   const currentBaseLayer = BASE_LAYERS.find(l => l.id === baseLayerType);
 
+  // Architecture view is public — no auth required
+  if (location.pathname === ROUTES.ARCHITECTURE) return <ArchitectureView />;
+
   // Farmer demo mode — access via ?demo=farmer in URL
   const isDemoFarmer = new URLSearchParams(window.location.search).get('demo') === 'farmer';
   if (isDemoFarmer) {
@@ -423,13 +425,12 @@ function App() {
       {!isMobile && location.pathname !== ROUTES.MAP && (
         <div style={{ flex: 1, flexDirection: 'column', minHeight: 0, overflow: 'hidden', display: 'flex' }}>
           <Routes>
-            <Route path={ROUTES.CARRIERS} element={<CarriersView />} />
-            <Route path={ROUTES.ASSETS} element={<AssetsView currency={currency} />} />
             <Route path={ROUTES.TRANSACTIONS} element={<TransactionsView currency={currency} />} />
             <Route path={ROUTES.PAYMENTS} element={<PaymentsView currency={currency} />} />
             <Route path={ROUTES.REPORTS} element={<ReportsView currency={currency} />} />
             <Route path={ROUTES.STATEMENTS} element={<StatementsView currency={currency} />} />
             <Route path={ROUTES.USERS} element={<UsersView currentUser={user} />} />
+            <Route path={ROUTES.ARCHITECTURE} element={<ArchitectureView />} />
             <Route path="*" element={<Navigate to={ROUTES.MAP} replace />} />
           </Routes>
         </div>
@@ -613,19 +614,9 @@ function App() {
         {isMobile && (
           <>
             {/* ── Mobile Tab View Panels (sit above map, below top nav) ── */}
-            {activeTab === 'carriers' && (
-              <div className="mobile-view-panel">
-                <CarriersView />
-              </div>
-            )}
             {activeTab === 'transactions' && (
               <div className="mobile-view-panel">
                 <TransactionsView currency={currency} isMobile={true} />
-              </div>
-            )}
-            {activeTab === 'assets' && (
-              <div className="mobile-view-panel">
-                <AssetsView currency={currency} isMobile={true} />
               </div>
             )}
             {activeTab === 'payments' && (
@@ -954,7 +945,6 @@ function App() {
               </div>
               <div className="mobile-more-grid">
                 {[
-                  { label: 'Assets',          tab: 'assets',        icon: Package    },
                   { label: 'Payments',        tab: 'payments',      icon: CreditCard },
                   { label: 'Reports',         tab: 'reports',       icon: BarChart2  },
                   { label: 'Statements',      tab: 'statements',    icon: FileText   },

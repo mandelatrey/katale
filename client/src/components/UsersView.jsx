@@ -19,7 +19,6 @@ const ROLE_LABELS = {
   staff:   { label: 'Team Member', color: '#7c3aed', bg: '#ede9fe' },
   farmer:  { label: 'Farmer',      color: '#d97706', bg: '#fef3c7' },
   broker:  { label: 'Broker',      color: '#0284c7', bg: '#e0f2fe' },
-  carrier: { label: 'Carrier',     color: '#dc2626', bg: '#fee2e2' },
 };
 
 const CATEGORIES = [
@@ -28,13 +27,10 @@ const CATEGORIES = [
   { key: 'staff',   label: 'Team Members' },
   { key: 'farmer',  label: 'Farmers'      },
   { key: 'broker',  label: 'Brokers'      },
-  { key: 'carrier', label: 'Carriers'     },
 ];
 
 const PERMISSIONS = [
   { key: 'canViewCommodities',  label: 'View Commodities'  },
-  { key: 'canViewCarriers',     label: 'View Carriers'     },
-  { key: 'canViewAssets',       label: 'View Assets'       },
   { key: 'canViewTransactions', label: 'View Transactions' },
   { key: 'canViewPayments',     label: 'View Payments'     },
   { key: 'canViewReports',      label: 'View Reports'      },
@@ -233,8 +229,8 @@ function AddUserModal({ onClose, onSave, defaultRole }) {
   const [form, setForm] = useState({
     name: '', phoneE164: '', role: defaultRole || 'farmer', password: '',
     permissions: {
-      canViewCommodities: true, canViewCarriers: true,
-      canViewAssets: false, canViewTransactions: false,
+      canViewCommodities: true,
+      canViewTransactions: false,
       canViewPayments: false, canViewReports: false, canViewStatements: false,
     },
   });
@@ -329,7 +325,6 @@ function AddUserModal({ onClose, onSave, defaultRole }) {
               <option value="staff">Team Member — limited access</option>
               <option value="farmer">Farmer</option>
               <option value="broker">Broker</option>
-              <option value="carrier">Carrier</option>
             </select>
           </div>
 

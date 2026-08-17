@@ -25,8 +25,6 @@ export const createTransactionSchema = z.object({
   toMarket: objectId.optional(),
   buyer: z.string().trim().min(1).optional(),
   seller: z.string().trim().min(1).optional(),
-  carrier: objectId.optional(),
-  asset: objectId.optional(),
   status: statusEnum.optional(),
   notes: z.string().trim().max(2000).optional(),
   paymentMethod: z
@@ -40,8 +38,6 @@ export const createTransactionSchema = z.object({
 export const updateTransactionSchema = z
   .object({
     status: statusEnum.optional(),
-    carrier: objectId.nullable().optional(),
-    asset: objectId.nullable().optional(),
     buyer: z.string().trim().min(1).nullable().optional(),
     seller: z.string().trim().min(1).nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional(),

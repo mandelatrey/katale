@@ -14,8 +14,6 @@ import {
 const POPULATE_OPTS = [
   { path: "fromMarket", select: "name district" },
   { path: "toMarket", select: "name district" },
-  { path: "carrier", select: "name phone vehicleModel vehicleType" },
-  { path: "asset", select: "name type" },
 ];
 
 export async function listTransactions(params = {}, _actor) {
@@ -68,8 +66,6 @@ export async function getTransactionById(params, _actor) {
   const txn = await Transaction.findById(id).populate([
     { path: "fromMarket", select: "name district region" },
     { path: "toMarket", select: "name district region" },
-    { path: "carrier", select: "name phone vehicleModel vehicleType" },
-    { path: "asset", select: "name type status" },
   ]);
   if (!txn) throw notFound("Transaction not found");
   return txn;
@@ -101,8 +97,6 @@ export async function createTransaction(data, actor) {
             toMarket: body.toMarket,
             buyer: body.buyer,
             seller: body.seller,
-            carrier: body.carrier,
-            asset: body.asset,
             status: body.status || "pending",
             notes: body.notes,
             createdBy: actor?.userId || undefined,
@@ -126,14 +120,14 @@ export async function createTransaction(data, actor) {
             paidTo: body.paymentPaidTo || body.seller || undefined,
             reference: `REF${Math.floor(Math.random() * 900000) + 100000}`,
           }
-        ], { session }, 
+        ], { session },
       );
       }
 
       txnId = txn._id;
     });
 
-    return Transactiin.findById(txnId).populate(POPULATE_OPTS);
+    return Transaction.findById(txnId).populate(POPULATE_OPTS);
 
   } finally {
     session.endSession();

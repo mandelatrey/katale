@@ -38,7 +38,7 @@ router.post(
     if (!phoneE164 || !PHONE_RE.test(phoneE164)) {
       throw badRequest("phoneE164 must be a valid E.164 number (e.g. +256700000000)");
     }
-    const validRoles = ["farmer", "broker", "carrier", "staff", "admin"];
+    const validRoles = ["farmer", "broker", "staff", "admin"];
     if (!role || !validRoles.includes(role)) {
       throw badRequest(`role must be one of: ${validRoles.join(", ")}`);
     }
@@ -79,7 +79,7 @@ router.put(
     }
     if (active !== undefined) update.active = Boolean(active);
     if (role !== undefined) {
-      const validRoles = ["farmer", "broker", "carrier", "staff", "admin"];
+      const validRoles = ["farmer", "broker", "staff", "admin"];
       if (!validRoles.includes(role)) throw badRequest("Invalid role");
       update.role = role;
     }
