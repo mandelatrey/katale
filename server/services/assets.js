@@ -9,6 +9,7 @@ export async function listAssets(params = {}, _actor) {
     params,
     "asset filter",
   );
+  
   const filter = {};
   if (type) filter.type = type;
   if (status) filter.status = status;

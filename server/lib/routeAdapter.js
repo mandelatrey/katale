@@ -25,9 +25,12 @@ export function handler(fn) {
 }
 
 // Build the `actor` argument the service layer expects.
-// Today there is no auth middleware, so we accept an `x-actor-id` header
-// for development and the WhatsApp webhook will supply a real user id later.
+// Prefers req.user set by requireAuth middleware; falls back to x-actor-id
+// header (dev) or anonymous.
 export function actorFromRequest(req) {
+  if (req.user) {
+    return { userId: req.user._id.toString(), role: req.user.role, source: "jwt" };
+  }
   const id = req.header("x-actor-id") || null;
   return { userId: id, source: id ? "header" : "anonymous" };
 }

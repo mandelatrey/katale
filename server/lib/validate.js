@@ -7,9 +7,10 @@ import { badRequest } from "./errors.js";
 export function parse(schema, value, label = "input") {
   const result = schema.safeParse(value);
   if (result.success) return result.data;
-  const details = result.error.issues.map((i) => ({
-    path: i.path.join("."),
-    message: i.message,
-  }));
+  const details = result.error.issues.map((i) => (
+    { path: i.path.join("."),
+      message: i.message,
+    }
+  ));
   throw badRequest(`Invalid ${label}`, details);
 }

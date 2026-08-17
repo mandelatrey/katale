@@ -2,6 +2,7 @@ import { z } from "zod";
 import { objectId } from "./common.js";
 
 export const listMarketsSchema = z.object({
+  name: z.string().trim().min(1).optional(),
   region: z.string().trim().min(1).optional(),
   district: z.string().trim().min(1).optional(),
   marketType: z.enum(["wholesale", "retail", "collection"]).optional(),

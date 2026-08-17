@@ -1,6 +1,8 @@
+import mongoose from 'mongoose';
 import Transaction from "../models/Transaction.js";
 import Payment from "../models/Payment.js";
 import { parse } from "../lib/validate.js";
+import { nextSeq } from '../lib/sequence.js';
 import { notFound } from "../lib/errors.js";
 import {
   listTransactionsSchema,
@@ -75,51 +77,69 @@ export async function getTransactionById(params, _actor) {
 
 export async function createTransaction(data, actor) {
   const body = parse(createTransactionSchema, data, "transaction");
-
-  const count = await Transaction.countDocuments();
-  const transactionId = `TXN-${String(count + 1).padStart(5, "0")}`;
   const totalAmount = Math.round(body.quantity * body.unitPrice);
 
-  const txn = await Transaction.create({
-    transactionId,
-    type: body.type,
-    commodity: body.commodity,
-    quantity: body.quantity,
-    unitPrice: body.unitPrice,
-    totalAmount,
-    currency: body.currency,
-    fromMarket: body.fromMarket,
-    toMarket: body.toMarket,
-    buyer: body.buyer,
-    seller: body.seller,
-    carrier: body.carrier,
-    asset: body.asset,
-    status: body.status || "pending",
-    notes: body.notes,
-    createdBy: actor?.userId || undefined,
-  });
+  const session = await mongoose.startSession();
 
-  // Auto-create a linked payment when a method is provided. This is the
-  // same behaviour the UI relied on; WhatsApp "create transaction" will hit
-  // this path too.
-  if (body.paymentMethod) {
-    const payCount = await Payment.countDocuments();
-    await Payment.create({
-      paymentId: `PAY-${String(payCount + 1).padStart(5, "0")}`,
-      transaction: txn._id,
-      amount: totalAmount,
-      currency: body.currency,
-      method: body.paymentMethod,
-      provider: body.paymentProvider || null,
-      status: "pending",
-      paidBy: body.paymentPaidBy || body.buyer || undefined,
-      paidTo: body.paymentPaidTo || body.seller || undefined,
-      reference: `REF${Math.floor(Math.random() * 900000) + 100000}`,
+  try {
+    let txnId;
+    await session.withTransaction(async () => {
+      const seq = await nextSeq("transaction", session);
+      const transactionId = `TXN-${String(seq).padStart(5, "0")}`;
+
+      const txn = await Transaction.create(
+        [
+          {
+            transactionId,
+            type: body.type,
+            commodity: body.commodity,
+            quantity: body.quantity,
+            unitPrice: body.unitPrice,
+            totalAmount,
+            currency: body.currency,
+            fromMarket: body.fromMarket,
+            toMarket: body.toMarket,
+            buyer: body.buyer,
+            seller: body.seller,
+            carrier: body.carrier,
+            asset: body.asset,
+            status: body.status || "pending",
+            notes: body.notes,
+            createdBy: actor?.userId || undefined,
+          },
+        ], { session },
+      );
+
+      if (body.paymentMethod) {
+      const paySeq = await nextSeq("payment", session);
+      await Payment.create(
+        [
+          {
+            paymentId: `PAY-${String(paySeq).padStart(5, "0")}`,
+            transaction: txn._id,
+            amount: totalAmount,
+            currency: body.currency,
+            method: body.paymentMethod,
+            provider: body.paymentProvider || null,
+            status: "pending",
+            paidBy: body.paymentPaidBy || body.buyer || undefined,
+            paidTo: body.paymentPaidTo || body.seller || undefined,
+            reference: `REF${Math.floor(Math.random() * 900000) + 100000}`,
+          }
+        ], { session }, 
+      );
+      }
+
+      txnId = txn._id;
     });
-  }
 
-  return Transaction.findById(txn._id).populate(POPULATE_OPTS);
-}
+    return Transactiin.findById(txnId).populate(POPULATE_OPTS);
+
+  } finally {
+    session.endSession();
+  };
+};
+
 
 export async function updateTransaction({ id, ...data }, _actor) {
   const { id: tid } = parse(transactionIdSchema, { id }, "transaction id");

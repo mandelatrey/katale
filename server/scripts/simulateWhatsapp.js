@@ -38,7 +38,11 @@ function twilioBody(fromE164, body) {
     Body: body,
     NumMedia: "0",
   });
-  return { body: params.toString(), contentType: "application/x-www-form-urlencoded" };
+
+  return { 
+    body: params.toString(), 
+    contentType: "application/x-www-form-urlencoded" 
+  };
 }
 
 function metaBody(fromE164, body) {
@@ -68,7 +72,8 @@ function metaBody(fromE164, body) {
       },
     ],
   };
-  return { body: JSON.stringify(payload), contentType: "application/json" };
+  return { body: JSON.stringify(payload), 
+    contentType: "application/json" };
 }
 
 async function main() {

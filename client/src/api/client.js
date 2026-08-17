@@ -23,11 +23,19 @@ export class ApiError extends Error {
   }
 }
 
+function getToken() {
+  return localStorage.getItem("agribridge_token");
+}
+
 async function request(path, { method = "GET", body, params } = {}) {
   const url = `${BASE_URL}${path}${buildQuery(params)}`;
+  const token = getToken();
+  const headers = {};
+  if (body) headers["Content-Type"] = "application/json";
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(url, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   let payload = null;
