@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import Transaction from "../models/Transaction.js";
 import Payment from "../models/Payment.js";
 import { parse } from "../lib/validate.js";
@@ -75,64 +74,52 @@ export async function createTransaction(data, actor) {
   const body = parse(createTransactionSchema, data, "transaction");
   const totalAmount = Math.round(body.quantity * body.unitPrice);
 
-  const session = await mongoose.startSession();
+  const seq = await nextSeq("transaction");
+  const transactionId = `TXN-${String(seq).padStart(5, "0")}`;
 
-  try {
-    let txnId;
-    await session.withTransaction(async () => {
-      const seq = await nextSeq("transaction", session);
-      const transactionId = `TXN-${String(seq).padStart(5, "0")}`;
+  const txn = await Transaction.create({
+    transactionId,
+    type: body.type,
+    commodity: body.commodity,
+    quantity: body.quantity,
+    unitPrice: body.unitPrice,
+    totalAmount,
+    currency: body.currency,
+    fromMarket: body.fromMarket,
+    toMarket: body.toMarket,
+    buyer: body.buyer,
+    seller: body.seller,
+    status: body.status || "pending",
+    notes: body.notes,
+    createdBy: actor?.userId || undefined,
+  });
 
-      const txn = await Transaction.create(
-        [
-          {
-            transactionId,
-            type: body.type,
-            commodity: body.commodity,
-            quantity: body.quantity,
-            unitPrice: body.unitPrice,
-            totalAmount,
-            currency: body.currency,
-            fromMarket: body.fromMarket,
-            toMarket: body.toMarket,
-            buyer: body.buyer,
-            seller: body.seller,
-            status: body.status || "pending",
-            notes: body.notes,
-            createdBy: actor?.userId || undefined,
-          },
-        ], { session },
-      );
+  if (body.paymentMethod) {
+    try {
+      const paySeq = await nextSeq("payment");
+      await Payment.create({
+        paymentId: `PAY-${String(paySeq).padStart(5, "0")}`,
+        transaction: txn._id,
+        amount: totalAmount,
+        currency: body.currency,
+        method: body.paymentMethod,
+        provider: body.paymentProvider || null,
+        status: "pending",
+        paidBy: body.paymentPaidBy || body.buyer || undefined,
+        paidTo: body.paymentPaidTo || body.seller || undefined,
+        reference: `REF${Math.floor(Math.random() * 900000) + 100000}`,
+      });
+    } catch (err) {
+      // Best-effort: transaction is already committed. Log and roll it back
+      // manually so the client isn't left with an orphan Transaction.
+      console.error("[transactions] payment create failed, rolling back txn", err);
+      await Transaction.deleteOne({ _id: txn._id });
+      throw err;
+    }
+  }
 
-      if (body.paymentMethod) {
-      const paySeq = await nextSeq("payment", session);
-      await Payment.create(
-        [
-          {
-            paymentId: `PAY-${String(paySeq).padStart(5, "0")}`,
-            transaction: txn._id,
-            amount: totalAmount,
-            currency: body.currency,
-            method: body.paymentMethod,
-            provider: body.paymentProvider || null,
-            status: "pending",
-            paidBy: body.paymentPaidBy || body.buyer || undefined,
-            paidTo: body.paymentPaidTo || body.seller || undefined,
-            reference: `REF${Math.floor(Math.random() * 900000) + 100000}`,
-          }
-        ], { session },
-      );
-      }
-
-      txnId = txn._id;
-    });
-
-    return Transaction.findById(txnId).populate(POPULATE_OPTS);
-
-  } finally {
-    session.endSession();
-  };
-};
+  return Transaction.findById(txn._id).populate(POPULATE_OPTS);
+}
 
 
 export async function deleteTransaction(params, _actor) {

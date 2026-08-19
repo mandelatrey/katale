@@ -25,10 +25,16 @@ app.use(express.urlencoded({ extended: true })); // For Twilio form-encoded webh
 
 // Serverless cold starts hit /api/* before mongoose has finished connecting,
 // which causes mongoose to buffer the query and eventually time out (~10s).
-// Memoize the connection promise and await it before any DB-backed route runs.
+// On Vercel, containers are frozen between invocations and Atlas closes idle
+// sockets — so a memoized "connected" promise can outlive the underlying TCP
+// connection. Check readyState on every call and reconnect when it's stale.
 let mongoReady = null;
 function ensureDb() {
-  if (mongoReady) return mongoReady;
+  const state = mongoose.connection.readyState;
+  // 1 = connected, 2 = connecting. Anything else means we must (re)connect.
+  if (state === 1) return Promise.resolve(mongoose.connection);
+  if (state === 2 && mongoReady) return mongoReady;
+
   mongoReady = mongoose
     .connect(MONGODB_URI, {
       maxPoolSize: 10,
@@ -115,8 +121,9 @@ ensureDb().catch((err) => {
 mongoose.connection.on("connected", () =>
   console.log("[mongo] MongoDB reconnected"),
 );
-mongoose.connection.on("disconnected", () =>
-  console.warn("[mongo] MongoDB disconnected — waiting for reconnection"),
-);
+mongoose.connection.on("disconnected", () => {
+  console.warn("[mongo] MongoDB disconnected — waiting for reconnection");
+  mongoReady = null; // force ensureDb() to reconnect on the next request
+});
 
 export default app;
