@@ -1,7 +1,11 @@
 // Test script to verify Gemini API works with tool definitions
 import { toolDefinitions } from "./ai/tools.js";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "AIzaSyCVNO-_lVN3S9rYB14PEU_HbXvK0p9f3Po";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error("GEMINI_API_KEY is required. Set it in your environment or a .env file.");
+  process.exit(1);
+}
 const GEMINI_MODEL = "gemini-1.5-flash";
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta";
 
