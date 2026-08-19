@@ -135,6 +135,14 @@ export async function createTransaction(data, actor) {
 };
 
 
+export async function deleteTransaction(params, _actor) {
+  const { id } = parse(transactionIdSchema, params, "transaction id");
+  const txn = await Transaction.findByIdAndDelete(id);
+  if (!txn) throw notFound("Transaction not found");
+  await Payment.deleteMany({ transaction: id });
+  return { ok: true };
+}
+
 export async function updateTransaction({ id, ...data }, _actor) {
   const { id: tid } = parse(transactionIdSchema, { id }, "transaction id");
   const update = parse(updateTransactionSchema, data, "transaction update");

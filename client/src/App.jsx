@@ -137,7 +137,15 @@ function getMarkerStyle(price, priceRange, isSelected) {
 }
 
 function App() {
-  const { user, loading: authLoading, login, logout, signup } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    login,
+    logout,
+    signup,
+    verifyStart,
+    verifyCheck,
+  } = useAuth();
 
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
@@ -398,7 +406,14 @@ function App() {
     );
   }
 
-  if (!user) return <AuthScreen onLogin={login} onSignup={signup} />;
+  if (!user) return (
+    <AuthScreen
+      onLogin={login}
+      onSignup={signup}
+      onVerifyStart={verifyStart}
+      onVerifyCheck={verifyCheck}
+    />
+  );
 
   if (user.role === 'farmer') return <FarmerPortal user={user} onLogout={logout} />;
 
@@ -425,7 +440,7 @@ function App() {
       {!isMobile && location.pathname !== ROUTES.MAP && (
         <div style={{ flex: 1, flexDirection: 'column', minHeight: 0, overflow: 'hidden', display: 'flex' }}>
           <Routes>
-            <Route path={ROUTES.TRANSACTIONS} element={<TransactionsView currency={currency} />} />
+            <Route path={ROUTES.TRANSACTIONS} element={<TransactionsView currency={currency} currentUser={user} />} />
             <Route path={ROUTES.PAYMENTS} element={<PaymentsView currency={currency} />} />
             <Route path={ROUTES.REPORTS} element={<ReportsView currency={currency} />} />
             <Route path={ROUTES.STATEMENTS} element={<StatementsView currency={currency} />} />
@@ -616,7 +631,7 @@ function App() {
             {/* ── Mobile Tab View Panels (sit above map, below top nav) ── */}
             {activeTab === 'transactions' && (
               <div className="mobile-view-panel">
-                <TransactionsView currency={currency} isMobile={true} />
+                <TransactionsView currency={currency} isMobile={true} currentUser={user} />
               </div>
             )}
             {activeTab === 'payments' && (
@@ -965,9 +980,18 @@ function App() {
                   </button>
                 ))}
               </div>
-              <button
+              <div
                 className="mobile-more-user"
+                role="button"
+                tabIndex={0}
                 onClick={() => { setMoreSheetOpen(false); setAccountModalOpen(true); }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setMoreSheetOpen(false);
+                    setAccountModalOpen(true);
+                  }
+                }}
               >
                 <div className="mobile-more-user-info">
                   <div className="mobile-more-avatar">
@@ -985,7 +1009,7 @@ function App() {
                   <LogOut size={14} />
                   Logout
                 </button>
-              </button>
+              </div>
             </div>
 
             {/* ── Bottom Tab Bar ── */}

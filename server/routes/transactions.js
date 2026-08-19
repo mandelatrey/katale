@@ -5,6 +5,7 @@ import {
   getTransactionById,
   createTransaction,
   updateTransaction,
+  deleteTransaction,
 } from "../services/transactions.js";
 import { handler, actorFromRequest } from "../lib/routeAdapter.js";
 
@@ -41,6 +42,11 @@ router.put(
       actorFromRequest(req),
     ),
   ),
+);
+
+router.delete(
+  "/:id",
+  handler((req) => deleteTransaction({ id: req.params.id }, actorFromRequest(req))),
 );
 
 export default router;

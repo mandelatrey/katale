@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, ArrowUpRight, ArrowDownRight } from './Icons';
 import Tooltip from './Tooltip';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from './ui/select';
 import * as paymentsApi from '../api/payments.js';
+
+const METHOD_OPTIONS = ['all', 'mobile_money', 'bank_transfer', 'cash', 'cheque'];
+const STATUS_OPTIONS = ['all', 'pending', 'completed', 'failed', 'refunded'];
+const METHOD_LABEL = (m) => m === 'all' ? 'All Methods' : m.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+const STATUS_LABEL = (s) => s === 'all' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1);
 
 const UGX_TO_USD = 3700;
 
@@ -149,22 +155,53 @@ export default function PaymentsView({ currency = 'UGX', isMobile = false }) {
       )}
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {['all', 'mobile_money', 'bank_transfer', 'cash', 'cheque'].map(m => (
-            <button key={m} style={pillStyle(methodFilter === m)} onClick={() => setMethodFilter(m)}>
-              {m === 'all' ? 'All Methods' : m.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-            </button>
-          ))}
+      {isMobile ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+          <Select value={methodFilter} onValueChange={setMethodFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Filter by method</SelectLabel>
+                {METHOD_OPTIONS.map(m => (
+                  <SelectItem key={m} value={m}>{METHOD_LABEL(m)}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Filter by status</SelectLabel>
+                {STATUS_OPTIONS.map(s => (
+                  <SelectItem key={s} value={s}>{STATUS_LABEL(s)}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {['all', 'pending', 'completed', 'failed', 'refunded'].map(s => (
-            <button key={s} style={pillStyle(statusFilter === s)} onClick={() => setStatusFilter(s)}>
-              {s === 'all' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
+      ) : (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {METHOD_OPTIONS.map(m => (
+              <button key={m} style={pillStyle(methodFilter === m)} onClick={() => setMethodFilter(m)}>
+                {METHOD_LABEL(m)}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {STATUS_OPTIONS.map(s => (
+              <button key={s} style={pillStyle(statusFilter === s)} onClick={() => setStatusFilter(s)}>
+                {STATUS_LABEL(s)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Table (desktop) / Cards (mobile) */}
       {isMobile ? (

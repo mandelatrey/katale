@@ -24,10 +24,23 @@ const userSchema = new mongoose.Schema(
       enum: ["farmer", "broker", "staff", "admin"],
       default: "farmer",
     },
-    // Hashed password — only set for admin users (farmers authenticate via WhatsApp/phone).
+    // Hashed password — required for admin/staff/broker (they log in on the
+    // web dashboard with password). Farmers authenticate via WhatsApp OTP.
     passwordHash: { type: String, select: false },
+    // Set to true once the phone number has been verified via Twilio Verify OTP.
+    // Existing admins are backfilled to true; everyone else must verify before login.
+    phoneVerified: { type: Boolean, default: false },
     active: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
+    // Documented opt-in for non-transactional WhatsApp messages (price alerts,
+    // daily digest, market warnings). Required by Meta's WhatsApp Business
+    // Policy — `copy` stores the exact text the user agreed to at signup.
+    messagingConsent: {
+      optedIn:   { type: Boolean, default: false },
+      optedInAt: { type: Date },
+      copy:      { type: String },
+      channel:   { type: String, default: "whatsapp" },
+    },
     // Granular permissions for staff/team members — ignored for admin/farmer roles
     permissions: {
       canViewCommodities:  { type: Boolean, default: true },

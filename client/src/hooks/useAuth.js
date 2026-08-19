@@ -27,12 +27,33 @@ export function useAuth() {
     return data.user;
   };
 
-  const signup = async (name, phoneE164) => authApi.signup(name, phoneE164);
+  const signup = async (name, phoneE164, messagingConsent) =>
+    authApi.signup(name, phoneE164, messagingConsent);
+
+  const verifyStart = (phoneE164) => authApi.verifyStart(phoneE164);
+
+  // On success for farmer/broker, response includes a token → treat as login.
+  const verifyCheck = async (phoneE164, code) => {
+    const data = await authApi.verifyCheck(phoneE164, code);
+    if (data.token) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      setUser(data.user);
+    }
+    return data;
+  };
 
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
     setUser(null);
   };
 
-  return { user, loading, login, logout, signup };
+  return {
+    user,
+    loading,
+    login,
+    logout,
+    signup,
+    verifyStart,
+    verifyCheck,
+  };
 }

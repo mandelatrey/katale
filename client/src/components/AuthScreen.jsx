@@ -1,6 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const PHONE_RE = /^\+[1-9]\d{7,14}$/;
+
+// TEMPORARY — WhatsApp OTP is paused while Twilio reviews our business
+// profile. When true: hides the "WhatsApp code" method inside Log in and
+// swaps the Sign up form for a "paused" notice. Flip to `false` alongside
+// the matching constant in server/routes/auth.js once approval lands.
+const OTP_DISABLED = true;
+
+// Exact copy the user agrees to when ticking the alerts checkbox at signup.
+// Stored verbatim on User.messagingConsent.copy so we can prove what was shown
+// if Meta ever audits the sender.
+const ALERTS_CONSENT_COPY =
+  "Send me price updates, market alerts, and daily digests on WhatsApp from Agribridge. I can reply STOP anytime to unsubscribe.";
+
+// Small fine-print notice shown wherever we send a WhatsApp OTP. Transactional
+// codes are covered by implied consent (Meta OTP policy) — this text just makes
+// the terms visible to the user.
+function OtpConsentNotice() {
+  return (
+    <p style={{ fontSize: 11, color: "#9ca3af", margin: "-4px 0 0", lineHeight: 1.55 }}>
+      By continuing, you agree to receive a one-time verification code on
+      WhatsApp from Agribridge. Standard message rates may apply. See our{" "}
+      <a href="#" style={{ color: "#1f8a3e", textDecoration: "none" }}>Terms</a>
+      {" "}and{" "}
+      <a href="#" style={{ color: "#1f8a3e", textDecoration: "none" }}>Privacy Policy</a>.
+    </p>
+  );
+}
 
 function EyeIcon({ open }) {
   return open ? (
@@ -68,18 +95,138 @@ function Field({ label, type = "text", value, onChange, placeholder, error, auto
   );
 }
 
-function LoginForm({ onLogin }) {
+const normalizePhone = (v) => {
+  const stripped = v.replace(/\s/g, "");
+  if (stripped && !stripped.startsWith("+")) return "+" + stripped;
+  return stripped;
+};
+
+// Shared OTP entry step. Fires onVerifyStart on mount (opt-in via autoSend)
+// then submits the code to onVerifyCheck. On success calls onVerified(response).
+function OtpStep({ phone, onVerifyStart, onVerifyCheck, onVerified, onCancel, subtitle, autoSend = true }) {
+  const [code, setCode] = useState("");
+  const [sending, setSending] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+  const autoSentRef = useRef(false);
+
+  const sendCode = async () => {
+    setError("");
+    setStatus("");
+    setSending(true);
+    try {
+      await onVerifyStart(phone);
+      setStatus("Code sent — check WhatsApp");
+    } catch (err) {
+      setError(err.message || "Could not send code");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Auto-send once on mount when the parent requested it.
+  useEffect(() => {
+    if (autoSend && !autoSentRef.current) {
+      autoSentRef.current = true;
+      sendCode();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSubmit = async (ev) => {
+    ev.preventDefault();
+    if (!/^\d{4,10}$/.test(code.trim())) {
+      setError("Enter the digits from the WhatsApp message");
+      return;
+    }
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await onVerifyCheck(phone, code.trim());
+      onVerified(res);
+    } catch (err) {
+      setError(err.message || "Invalid or expired code");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.55 }}>
+        {subtitle || "We sent a code to your WhatsApp."}
+        <div style={{ marginTop: 4, color: "#6b7280" }}>
+          <strong style={{ color: "#111827" }}>{phone}</strong>
+        </div>
+      </div>
+      <Field
+        label="WhatsApp code"
+        type="text"
+        value={code}
+        onChange={setCode}
+        placeholder="6-digit code"
+        error={error && !status ? error : undefined}
+        autoComplete="one-time-code"
+      />
+      {status && !error && (
+        <div style={{ fontSize: 12, color: "#166534" }}>{status}</div>
+      )}
+      {error && (
+        <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 7, fontSize: 13, color: "#dc2626" }}>
+          {error}
+        </div>
+      )}
+      <button
+        type="submit"
+        disabled={submitting}
+        style={{
+          marginTop: 4,
+          padding: "10px 0",
+          background: submitting ? "#6b7280" : "#1f8a3e",
+          color: "#fff",
+          border: "none",
+          borderRadius: 8,
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: submitting ? "not-allowed" : "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        {submitting ? "Verifying…" : "Verify"}
+      </button>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+        <button
+          type="button"
+          onClick={sendCode}
+          disabled={sending}
+          style={{ background: "none", border: "none", color: "#1f8a3e", cursor: sending ? "wait" : "pointer", fontWeight: 500, padding: 0, fontFamily: "inherit" }}
+        >
+          {sending ? "Sending…" : "Resend code"}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{ background: "none", border: "none", color: "#6b7280", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
+          >
+            Use a different number
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function LoginForm({ onLogin, onVerifyStart, onVerifyCheck }) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
-
-  const normalizePhone = (v) => {
-    const stripped = v.replace(/\s/g, "");
-    if (stripped && !stripped.startsWith("+")) return "+" + stripped;
-    return stripped;
-  };
+  // When admin/staff hit "Phone not verified", we drop into the OTP step and
+  // retry login once the phone is verified.
+  const [needsVerify, setNeedsVerify] = useState(false);
 
   const validate = () => {
     const e = {};
@@ -88,21 +235,46 @@ function LoginForm({ onLogin }) {
     return e;
   };
 
+  const doLogin = async () => {
+    setSubmitting(true);
+    try {
+      await onLogin(phone, password);
+    } catch (err) {
+      const msg = err.message || "Invalid credentials";
+      if (/not verified/i.test(msg)) {
+        setNeedsVerify(true);
+      } else {
+        setServerError(msg);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (ev) => {
     ev.preventDefault();
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     setErrors({});
     setServerError("");
-    setSubmitting(true);
-    try {
-      await onLogin(phone, password);
-    } catch (err) {
-      setServerError(err.message || "Invalid credentials");
-    } finally {
-      setSubmitting(false);
-    }
+    await doLogin();
   };
+
+  if (needsVerify) {
+    return (
+      <OtpStep
+        phone={phone}
+        onVerifyStart={onVerifyStart}
+        onVerifyCheck={onVerifyCheck}
+        subtitle="Your phone needs to be verified before you can log in."
+        onVerified={async () => {
+          setNeedsVerify(false);
+          await doLogin();
+        }}
+        onCancel={() => setNeedsVerify(false)}
+      />
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -152,19 +324,14 @@ function LoginForm({ onLogin }) {
   );
 }
 
-function SignupForm({ onSignup }) {
+function SignupForm({ onSignup, onVerifyStart, onVerifyCheck }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [alertsOptIn, setAlertsOptIn] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [awaitingOtp, setAwaitingOtp] = useState(false);
   const [serverError, setServerError] = useState("");
-
-  const normalizePhone = (v) => {
-    const stripped = v.replace(/\s/g, "");
-    if (stripped && !stripped.startsWith("+")) return "+" + stripped;
-    return stripped;
-  };
 
   const validate = () => {
     const e = {};
@@ -181,8 +348,11 @@ function SignupForm({ onSignup }) {
     setServerError("");
     setSubmitting(true);
     try {
-      await onSignup(name.trim(), phone);
-      setSuccess(true);
+      const messagingConsent = alertsOptIn
+        ? { optedIn: true, copy: ALERTS_CONSENT_COPY }
+        : { optedIn: false };
+      await onSignup(name.trim(), phone, messagingConsent);
+      setAwaitingOtp(true);
     } catch (err) {
       setServerError(err.message || "Signup failed. Please try again.");
     } finally {
@@ -190,40 +360,19 @@ function SignupForm({ onSignup }) {
     }
   };
 
-  if (success) {
+  if (awaitingOtp) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, textAlign: "center" }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: "50%",
-          background: "#e6f2ea", display: "flex", alignItems: "center", justifyContent: "center",
-          margin: "0 auto",
-        }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f8a3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </div>
-        <div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: "#111827", marginBottom: 6 }}>Account created</div>
-          <div style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.6 }}>
-            Your Agribridge farmer account is active.<br />
-            Send a WhatsApp message to get started.
-          </div>
-        </div>
-        <div style={{
-          padding: "12px 16px",
-          background: "#f0fdf4",
-          border: "1px solid #bbf7d0",
-          borderRadius: 10,
-          fontSize: 13,
-          color: "#166534",
-          fontWeight: 500,
-        }}>
-          WhatsApp: +256 700 000 000
-        </div>
-        <div style={{ fontSize: 12, color: "#9ca3af" }}>
-          Reply HELP to see what you can ask
-        </div>
-      </div>
+      <OtpStep
+        phone={phone}
+        onVerifyStart={onVerifyStart}
+        onVerifyCheck={onVerifyCheck}
+        subtitle="Verify your WhatsApp number to activate your farmer account."
+        onVerified={() => {
+          // For farmer role, verifyCheck returns a token → useAuth logs the user in
+          // and App.jsx will re-render into FarmerPortal. Nothing more to do here.
+        }}
+        onCancel={() => setAwaitingOtp(false)}
+      />
     );
   }
 
@@ -249,6 +398,30 @@ function SignupForm({ onSignup }) {
       <p style={{ fontSize: 12, color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>
         This number is how we identify you on WhatsApp. No password needed.
       </p>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 10,
+          padding: "12px 14px",
+          background: "#f9fafb",
+          border: "1px solid #e5e7eb",
+          borderRadius: 8,
+          cursor: "pointer",
+          fontSize: 12,
+          color: "#374151",
+          lineHeight: 1.55,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={alertsOptIn}
+          onChange={(e) => setAlertsOptIn(e.target.checked)}
+          style={{ marginTop: 2, accentColor: "#1f8a3e", flexShrink: 0 }}
+        />
+        <span>{ALERTS_CONSENT_COPY}</span>
+      </label>
+      <OtpConsentNotice />
       {serverError && (
         <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 7, fontSize: 13, color: "#dc2626" }}>
           {serverError}
@@ -277,8 +450,189 @@ function SignupForm({ onSignup }) {
   );
 }
 
-export default function AuthScreen({ onLogin, onSignup }) {
+function FarmerLoginForm({ onVerifyStart, onVerifyCheck }) {
+  const [phone, setPhone] = useState("");
+  const [errors, setErrors] = useState({});
+  const [sending, setSending] = useState(false);
+  const [awaitingOtp, setAwaitingOtp] = useState(false);
+  const [serverError, setServerError] = useState("");
+
+  const validate = () => {
+    const e = {};
+    if (!PHONE_RE.test(phone)) e.phone = "Enter a valid phone number (e.g. +256700000000)";
+    return e;
+  };
+
+  const handleSubmit = async (ev) => {
+    ev.preventDefault();
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setErrors({});
+    setServerError("");
+    setSending(true);
+    try {
+      await onVerifyStart(phone);
+      setAwaitingOtp(true);
+    } catch (err) {
+      setServerError(err.message || "Could not send code");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (awaitingOtp) {
+    return (
+      <OtpStep
+        phone={phone}
+        onVerifyStart={onVerifyStart}
+        onVerifyCheck={onVerifyCheck}
+        subtitle="Enter the code we just sent on WhatsApp to log in."
+        autoSend={false}
+        onVerified={() => {
+          // Farmer/broker → token issued → App re-renders into their portal.
+        }}
+        onCancel={() => setAwaitingOtp(false)}
+      />
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <Field
+        label="WhatsApp number"
+        type="tel"
+        value={phone}
+        onChange={(v) => setPhone(normalizePhone(v))}
+        placeholder="Add your whatsapp number"
+        error={errors.phone}
+        autoComplete="tel"
+      />
+      <p style={{ fontSize: 12, color: "#9ca3af", margin: 0, lineHeight: 1.5 }}>
+        We'll send you a one-time code on WhatsApp. No password needed.
+      </p>
+      <OtpConsentNotice />
+      {serverError && (
+        <div style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 7, fontSize: 13, color: "#dc2626" }}>
+          {serverError}
+        </div>
+      )}
+      <button
+        type="submit"
+        disabled={sending}
+        style={{
+          marginTop: 4,
+          padding: "10px 0",
+          background: sending ? "#6b7280" : "#1f8a3e",
+          color: "#fff",
+          border: "none",
+          borderRadius: 8,
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: sending ? "not-allowed" : "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        {sending ? "Sending code…" : "Send WhatsApp code"}
+      </button>
+    </form>
+  );
+}
+
+// Single "Log in" tab that lets the user pick their auth method. Splitting by
+// method (not audience) means we never do a server-side phone → role lookup,
+// so there's no enumeration oracle. While OTP is paused, we render only the
+// password form — no method toggle.
+function UnifiedLoginForm({ onLogin, onVerifyStart, onVerifyCheck }) {
+  const [method, setMethod] = useState("password");
+  if (OTP_DISABLED) {
+    return (
+      <LoginForm
+        onLogin={onLogin}
+        onVerifyStart={onVerifyStart}
+        onVerifyCheck={onVerifyCheck}
+      />
+    );
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      <div className="auth-method-toggle" role="tablist" aria-label="Log in method">
+        {[
+          { key: "password", label: "Password" },
+          { key: "code",     label: "WhatsApp code" },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={method === key}
+            onClick={() => setMethod(key)}
+            className={`auth-method${method === key ? " active" : ""}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {method === "password" ? (
+        <LoginForm
+          onLogin={onLogin}
+          onVerifyStart={onVerifyStart}
+          onVerifyCheck={onVerifyCheck}
+        />
+      ) : (
+        <FarmerLoginForm
+          onVerifyStart={onVerifyStart}
+          onVerifyCheck={onVerifyCheck}
+        />
+      )}
+    </div>
+  );
+}
+
+// Shown in place of the Sign up form while OTP is paused. Signup can't be
+// completed without a working verification channel, so we surface the pause
+// clearly rather than letting the flow dead-end at the OTP step.
+function SignupPausedNotice() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        padding: "18px 16px",
+        background: "#fff8e1",
+        border: "1px solid #fde68a",
+        borderRadius: 8,
+      }}
+    >
+      <div style={{ fontSize: 14, fontWeight: 600, color: "#78350f" }}>
+        Sign-up temporarily paused
+      </div>
+      <p style={{ fontSize: 13, color: "#78350f", margin: 0, lineHeight: 1.55 }}>
+        Farmer registration is on hold while WhatsApp verification is under
+        review. Please check back soon — existing accounts can still log in.
+      </p>
+    </div>
+  );
+}
+
+export default function AuthScreen({ onLogin, onSignup, onVerifyStart, onVerifyCheck }) {
   const [tab, setTab] = useState("login");
+  // Network Information API is Chrome/Android-only, which is our target for
+  // farmers. When it reports 2G or Data Saver, we drop the accent-bar animation
+  // to save CPU/battery. Falls back to always-animated on unsupported browsers;
+  // prefers-reduced-motion is handled purely in CSS.
+  const [slowConnection, setSlowConnection] = useState(false);
+  useEffect(() => {
+    const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (!c) return;
+    const check = () => {
+      const et = c.effectiveType || "";
+      setSlowConnection(!!c.saveData || et === "slow-2g" || et === "2g");
+    };
+    check();
+    c.addEventListener?.("change", check);
+    return () => c.removeEventListener?.("change", check);
+  }, []);
 
   const FEATURES = [
     { label: "Price data",      desc: "Live from 40+ markets" },
@@ -287,7 +641,7 @@ export default function AuthScreen({ onLogin, onSignup }) {
   ];
 
   return (
-    <div className="auth-root">
+    <div className={`auth-root${slowConnection ? " auth-slow-net" : ""}`}>
       {/* ── Left panel — brand ── */}
       <div className="auth-left">
         <div style={{
@@ -324,12 +678,14 @@ export default function AuthScreen({ onLogin, onSignup }) {
 
       {/* ── Right panel — form ── */}
       <div className="auth-right">
+        {/* Mobile-only logo — the left brand panel is hidden below 640px */}
+        <div className="auth-logo-mobile" role="img" aria-label="Agribridge" />
         <div className="auth-form-card">
           {/* Tab toggle */}
           <div className="auth-tabs">
             {[
               { key: "login",  label: "Log in" },
-              { key: "signup", label: "Farmer sign up" },
+              { key: "signup", label: "Sign up" },
             ].map(({ key, label }) => (
               <button
                 key={key}
@@ -344,27 +700,46 @@ export default function AuthScreen({ onLogin, onSignup }) {
           {/* Heading */}
           <div className="auth-heading">
             <div className="auth-heading-title">
-              {tab === "login" ? "Welcome back" : "Get started"}
+              {tab === "signup" ? "Get started" : "Welcome back"}
             </div>
             <div className="auth-heading-sub">
-              {tab === "login"
-                ? "Log in to the Agribridge dashboard."
-                : "Register your phone to receive WhatsApp updates."}
+              {tab === "login" && (OTP_DISABLED
+                ? "Sign in with your Agribridge password."
+                : "Pick a method to sign in to Agribridge.")}
+              {tab === "signup" && (OTP_DISABLED
+                ? "Registration is paused while WhatsApp verification is reviewed."
+                : "Register your phone to receive WhatsApp updates.")}
             </div>
           </div>
 
-          {/* Both forms always mounted — grid overlay keeps container height stable */}
+          {/* All forms mounted — grid overlay keeps container height stable */}
           <div style={{ display: "grid" }}>
             {[
               {
                 key: "login",
-                form: <LoginForm onLogin={onLogin} />,
-                hint: "Dashboard access is for admin accounts only.",
+                form: (
+                  <UnifiedLoginForm
+                    onLogin={onLogin}
+                    onVerifyStart={onVerifyStart}
+                    onVerifyCheck={onVerifyCheck}
+                  />
+                ),
+                hint: "Password: staff, admin, broker. WhatsApp code: farmer.",
               },
               {
                 key: "signup",
-                form: <SignupForm onSignup={onSignup} />,
-                hint: "Farmer accounts access Agribridge via WhatsApp, not the web.",
+                form: OTP_DISABLED ? (
+                  <SignupPausedNotice />
+                ) : (
+                  <SignupForm
+                    onSignup={onSignup}
+                    onVerifyStart={onVerifyStart}
+                    onVerifyCheck={onVerifyCheck}
+                  />
+                ),
+                hint: OTP_DISABLED
+                  ? "Sign-ups resume once WhatsApp verification is back online."
+                  : "You'll get a one-time code on WhatsApp to finish signup.",
               },
             ].map(({ key, form, hint }) => (
               <div
@@ -384,6 +759,9 @@ export default function AuthScreen({ onLogin, onSignup }) {
           </div>
         </div>
       </div>
+
+      {/* Mobile-only animated accent bar — pinned to bottom of viewport */}
+      <div className="auth-accent-bar" aria-hidden="true" />
 
       <style>{`
         .auth-root {
@@ -499,6 +877,32 @@ export default function AuthScreen({ onLogin, onSignup }) {
           box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
 
+        /* Method picker inside the Log in tab (Password vs WhatsApp code). */
+        .auth-method-toggle {
+          display: flex;
+          background: #f3f4f6;
+          border-radius: 8px;
+          padding: 2px;
+        }
+        .auth-method {
+          flex: 1;
+          padding: 6px 0;
+          border: none;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: inherit;
+          transition: all 0.15s;
+          background: transparent;
+          color: #6b7280;
+        }
+        .auth-method.active {
+          background: #fff;
+          color: #111827;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+        }
+
         /* Heading */
         .auth-heading {
           margin-bottom: 24px;
@@ -537,19 +941,87 @@ export default function AuthScreen({ onLogin, onSignup }) {
           .auth-features { padding-top: 28px; }
         }
 
+        /* Mobile-only brand elements — hidden by default, shown ≤640px */
+        .auth-logo-mobile { display: none; }
+        .auth-accent-bar { display: none; }
+
         /* ── Mobile (≤640px): single column, no left panel ── */
         @media (max-width: 640px) {
           .auth-root { flex-direction: column; }
           .auth-left { display: none; }
           .auth-right {
+            /* Lock viewport height & clip overflow so signup/login always
+               fits on one screen. dvh handles collapsing mobile URL bar. */
             min-height: 100vh;
-            padding: 32px 20px;
-            align-items: flex-start;
-            padding-top: 60px;
+            min-height: 100dvh;
+            max-height: 100vh;
+            max-height: 100dvh;
+            overflow: hidden;
+            padding: 32px 20px 40px;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
           }
-          .auth-form-card { max-width: 100%; }
+          .auth-form-card {
+            max-width: 100%;
+            /* Auto margins push the card visually down while leaving the logo
+               anchored at the top. */
+            margin-top: auto;
+            margin-bottom: auto;
+          }
           .auth-heading-title { font-size: 22px; }
+          /* Trim internal spacing on mobile so the signup form fits without
+             feeling cramped on small phones. */
+          .auth-tabs        { margin-bottom: 20px; }
+          .auth-heading     { margin-bottom: 18px; min-height: 0; }
+
+          /* Mask-based tint: the source SVG has fill:#fff, so we recolor it
+             via CSS mask to sit on the light mobile background. */
+          .auth-logo-mobile {
+            display: block;
+            width: 132px;
+            height: 32px;
+            margin: 0 auto 24px;
+            flex-shrink: 0;
+            background-color: #0d3b1a;
+            -webkit-mask: url('/assets/agribridge-logo-white.svg') no-repeat center / contain;
+                    mask: url('/assets/agribridge-logo-white.svg') no-repeat center / contain;
+          }
+
+          .auth-accent-bar {
+            display: block;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 22px;
+            z-index: 10;
+            pointer-events: none;
+            background: linear-gradient(
+              90deg,
+              #0d3b1a 0%,
+              #1f8a3e 25%,
+              #4ec96b 50%,
+              #1f8a3e 75%,
+              #0d3b1a 100%
+            );
+            background-size: 200% 100%;
+            animation: auth-accent-shimmer 3.5s linear infinite;
+          }
         }
+
+        @keyframes auth-accent-shimmer {
+          0%   { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+
+        /* Disable the animation for OS-level reduced motion or when JS has
+           detected a slow / data-saver connection. */
+        @media (prefers-reduced-motion: reduce) {
+          .auth-accent-bar { animation: none; }
+        }
+        .auth-slow-net .auth-accent-bar { animation: none; }
       `}</style>
     </div>
   );

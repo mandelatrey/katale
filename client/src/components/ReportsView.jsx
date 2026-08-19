@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { FileText, ArrowUpRight } from './Icons';
 import Tooltip from './Tooltip';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from './ui/select';
 import * as reportsApi from '../api/reports.js';
+
+const TYPE_FILTER_OPTIONS = ['all', 'price_trend', 'trade_volume', 'market_activity', 'regional_summary'];
 
 function SummaryCard({ icon, label, value, sub, trend, color = '#1f8a3e', loading }) {
   const trendUp = trend > 0;
@@ -162,13 +165,33 @@ export default function ReportsView({ currency = 'UGX', isMobile = false }) {
       )}
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 16 }}>
-        {['all', 'price_trend', 'trade_volume', 'market_activity', 'regional_summary'].map(t => (
-          <button key={t} style={pillStyle(typeFilter === t)} onClick={() => setTypeFilter(t)}>
-            {t === 'all' ? 'All Reports' : TYPE_META[t]?.label || t}
-          </button>
-        ))}
-      </div>
+      {isMobile ? (
+        <div style={{ marginBottom: 16 }}>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Filter by report type</SelectLabel>
+                {TYPE_FILTER_OPTIONS.map(t => (
+                  <SelectItem key={t} value={t}>
+                    {t === 'all' ? 'All Reports' : TYPE_META[t]?.label || t}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 16 }}>
+          {TYPE_FILTER_OPTIONS.map(t => (
+            <button key={t} style={pillStyle(typeFilter === t)} onClick={() => setTypeFilter(t)}>
+              {t === 'all' ? 'All Reports' : TYPE_META[t]?.label || t}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Report Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(420px, 1fr))', gap: 12 }}>

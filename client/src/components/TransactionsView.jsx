@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, Package, ArrowUpRight, ArrowDownRight, Plus, X } from './Icons';
+import { CreditCard, Package, ArrowUpRight, ArrowDownRight, Plus, MoreHorizontal, Pencil, Trash2, Info } from './Icons';
 import { commodities } from '../constants';
 import Tooltip from './Tooltip';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Card, CardHeader, CardContent } from './ui/card';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from './ui/dropdown-menu';
+import { Field, FieldGroup, FieldLabel, FieldSet, FieldLegend, FieldDescription, FieldError } from './ui/field';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectGroup, SelectLabel } from './ui/select';
 import * as marketsApi from '../api/markets.js';
 import * as transactionsApi from '../api/transactions.js';
 
@@ -21,9 +30,34 @@ const PAYMENT_PROVIDERS = {
   cheque: ['Stanbic Bank', 'DFCU Bank', 'Centenary Bank'],
 };
 
-function SummaryCard({ icon, label, value, sub, trend, color = '#1f8a3e', loading }) {
+function SummaryCard({ icon, label, value, sub, trend, color = '#1f8a3e', loading, isMobile }) {
   const trendUp = trend > 0;
   const trendNeutral = trend === 0 || trend == null;
+
+  if (isMobile) {
+    return (
+      <div className="dash-card" style={{ border: '1px solid #e5e7eb', padding: '10px 10px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        <div style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', color, flexShrink: 0 }}>
+          {icon}
+        </div>
+        {loading ? (
+          <div className="dash-skeleton" style={{ width: '60%', height: 18, borderRadius: 4, marginTop: 2 }} />
+        ) : (
+          <div style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-black)', color: 'var(--gray-900)', letterSpacing: 'var(--tracking-tight)', lineHeight: 1.15, fontFamily: 'var(--font-mono)' }}>
+            {value}
+          </div>
+        )}
+        <div style={{ fontSize: 11, fontWeight: 'var(--weight-semibold)', color: 'var(--gray-700)', lineHeight: 1.2 }}>{label}</div>
+        {!trendNeutral && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 'var(--weight-semibold)', fontFamily: 'var(--font-mono)', color: trendUp ? '#1f8a3e' : '#dc2626', backgroundColor: trendUp ? '#e6f2ea' : '#fef2f2', padding: '1px 6px', borderRadius: 20 }}>
+            {trendUp ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+            {Math.abs(trend)}%
+          </span>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="dash-card" style={{ borderTop: `3px solid ${color}` }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -54,42 +88,33 @@ function SummaryCard({ icon, label, value, sub, trend, color = '#1f8a3e', loadin
   );
 }
 
-const STATUS_COLORS = {
-  pending:    { text: '#d97706', bg: '#fef3c7' },
-  confirmed:  { text: '#2563eb', bg: '#dbeafe' },
-  in_transit: { text: '#7c3aed', bg: '#ede9fe' },
-  delivered:  { text: '#1f8a3e', bg: '#e6f2ea' },
-  cancelled:  { text: '#dc2626', bg: '#fee2e2' },
-};
-
-const TYPE_COLORS = {
-  buy:  { text: '#1f8a3e', bg: '#e6f2ea' },
-  sell: { text: '#2563eb', bg: '#dbeafe' },
-};
-
-function Badge({ value, map }) {
-  const c = map[value] || { text: '#6b7280', bg: '#f3f4f6' };
-  return (
-    <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 'var(--weight-semibold)', letterSpacing: 'var(--tracking-wide)', color: c.text, backgroundColor: c.bg, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase' }}>
-      {value?.replace('_', ' ')}
-    </span>
-  );
+function StatusBadge({ value }) {
+  return <Badge variant={value}>{value?.replace('_', ' ')}</Badge>;
 }
 
-const inputStyle = {
-  width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb',
-  fontSize: 13, fontFamily: 'inherit', color: '#111827', backgroundColor: '#fff',
-  outline: 'none', boxSizing: 'border-box',
-};
+const fieldLabelClass = "text-[11px] font-semibold uppercase tracking-[0.07em] text-[#6b7280]";
+const inputClass = "h-9 rounded-lg border-[#e5e7eb] bg-white text-[13px] text-[#111827] focus-visible:border-[#1a6b30] focus-visible:ring-[#1a6b30]/15";
+const triggerClass = "h-9 rounded-lg border-[#e5e7eb] bg-white text-[13px] font-medium text-[#111827]";
 
-const labelStyle = { fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 4 };
-
-function AddTransactionModal({ onClose, onCreated }) {
+function TransactionFormModal({ onClose, onSaved, initial }) {
+  const isEdit = !!initial;
   const [markets, setMarkets]   = useState([]);
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(() => initial ? {
+    type: initial.type || 'buy',
+    commodity: initial.commodity || 'maize',
+    quantity: String(initial.quantity ?? ''),
+    unitPrice: String(initial.unitPrice ?? ''),
+    fromMarket: initial.fromMarket?._id || initial.fromMarket || '',
+    toMarket: initial.toMarket?._id || initial.toMarket || '',
+    buyer: initial.buyer || '',
+    seller: initial.seller || '',
+    status: initial.status || 'pending',
+    notes: initial.notes || '',
+    paymentMethod: '', paymentProvider: '',
+  } : {
     type: 'buy', commodity: 'maize', quantity: '', unitPrice: '',
     fromMarket: '', toMarket: '', buyer: '', seller: '',
     status: 'pending', notes: '',
@@ -133,8 +158,10 @@ function AddTransactionModal({ onClose, onCreated }) {
         paymentPaidBy:   form.buyer  || undefined,
         paymentPaidTo:   form.seller || undefined,
       };
-      const created = await transactionsApi.createTransaction(body);
-      onCreated(created);
+      const saved = isEdit
+        ? await transactionsApi.updateTransaction(initial._id, body)
+        : await transactionsApi.createTransaction(body);
+      onSaved(saved, isEdit);
       onClose();
     } catch (err) {
       setFormError(err.message);
@@ -146,147 +173,200 @@ function AddTransactionModal({ onClose, onCreated }) {
   const providers = form.paymentMethod ? PAYMENT_PROVIDERS[form.paymentMethod] : [];
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: 16 }}>
-      <div style={{ backgroundColor: '#fff', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 16px', borderBottom: '1px solid #f3f4f6' }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>New Transaction</div>
-            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Record a commodity trade transaction</div>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center' }}>
-            <X size={18} />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="!max-w-[640px] max-h-[90vh] overflow-y-auto border-none bg-transparent p-0 shadow-none ring-0">
+        <Card className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.22)]">
+          <CardHeader className="space-y-1 border-b border-[#f3f4f6] px-6 pt-5 pb-4">
+            <DialogTitle className="text-base font-bold tracking-[-0.01em] text-[#111827]">{isEdit ? 'Edit Transaction' : 'New Transaction'}</DialogTitle>
+            <DialogDescription className="text-xs text-[#6b7280]">
+              {isEdit ? `Update details for ${initial.transactionId || 'this trade'}` : 'Record a commodity trade transaction'}
+            </DialogDescription>
+          </CardHeader>
 
-        <form onSubmit={handleSubmit} style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Trade details */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={labelStyle}>Type</label>
-              <select style={inputStyle} value={form.type} onChange={e => set('type', e.target.value)}>
-                <option value="buy">Buy</option>
-                <option value="sell">Sell</option>
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Commodity</label>
-              <select style={inputStyle} value={form.commodity} onChange={e => set('commodity', e.target.value)}>
-                {commodities.map(c => <option key={c.key} value={c.key}>{c.icon} {c.label}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={labelStyle}>Quantity (kg)</label>
-              <input style={inputStyle} type="number" min="1" placeholder="e.g. 500" value={form.quantity} onChange={e => set('quantity', e.target.value)} required />
-            </div>
-            <div>
-              <label style={labelStyle}>Unit Price (UGX/kg)</label>
-              <input style={inputStyle} type="number" min="1" placeholder="e.g. 1200" value={form.unitPrice} onChange={e => set('unitPrice', e.target.value)} required />
-            </div>
-            <div>
-              <label style={labelStyle}>Total Amount</label>
-              <div style={{ ...inputStyle, backgroundColor: '#f9fafb', color: '#6b7280', fontFamily: 'var(--font-mono)', fontSize: 12, display: 'flex', alignItems: 'center' }}>
-                {total !== '—' ? `UGX ${total}` : '—'}
-              </div>
-            </div>
-          </div>
-
-          {/* Markets */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={labelStyle}>From Market</label>
-              <select style={inputStyle} value={form.fromMarket} onChange={e => set('fromMarket', e.target.value)}>
-                <option value="">— Select market —</option>
-                {markets.map(m => <option key={m._id} value={m._id}>{m.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>To Market</label>
-              <select style={inputStyle} value={form.toMarket} onChange={e => set('toMarket', e.target.value)}>
-                <option value="">— Select market —</option>
-                {markets.map(m => <option key={m._id} value={m._id}>{m.name}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Parties */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={labelStyle}>Buyer</label>
-              <input style={inputStyle} type="text" placeholder="Buyer name" value={form.buyer} onChange={e => set('buyer', e.target.value)} />
-            </div>
-            <div>
-              <label style={labelStyle}>Seller</label>
-              <input style={inputStyle} type="text" placeholder="Seller name" value={form.seller} onChange={e => set('seller', e.target.value)} />
-            </div>
-          </div>
-
-          {/* Status */}
-          <div>
-            <label style={labelStyle}>Initial Status</label>
-            <select style={inputStyle} value={form.status} onChange={e => set('status', e.target.value)}>
-              {['pending', 'confirmed', 'in_transit', 'delivered', 'cancelled'].map(s => (
-                <option key={s} value={s}>{s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Payment (optional) */}
-          <div style={{ backgroundColor: '#f9fafb', borderRadius: 10, padding: '14px 16px', border: '1px solid #f3f4f6' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 10 }}>Payment (optional)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div>
-                <label style={labelStyle}>Payment Method</label>
-                <select style={inputStyle} value={form.paymentMethod} onChange={e => { set('paymentMethod', e.target.value); set('paymentProvider', ''); }}>
-                  <option value="">— No payment yet —</option>
-                  {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </select>
-              </div>
-              {providers.length > 0 && (
-                <div>
-                  <label style={labelStyle}>Provider</label>
-                  <select style={inputStyle} value={form.paymentProvider} onChange={e => set('paymentProvider', e.target.value)}>
-                    <option value="">— Select provider —</option>
-                    {providers.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
+          <CardContent className="p-0">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5 px-6 pt-5 pb-6">
+              <FieldGroup>
+                {/* Trade details */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Field>
+                    <FieldLabel htmlFor="txn-type" className={fieldLabelClass}>Type</FieldLabel>
+                    <Select value={form.type} onValueChange={v => set('type', v)}>
+                      <SelectTrigger id="txn-type" className={triggerClass}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="buy">Buy</SelectItem>
+                        <SelectItem value="sell">Sell</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="txn-commodity" className={fieldLabelClass}>Commodity</FieldLabel>
+                    <Select value={form.commodity} onValueChange={v => set('commodity', v)}>
+                      <SelectTrigger id="txn-commodity" className={triggerClass}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {commodities.map(c => (
+                          <SelectItem key={c.key} value={c.key} icon={c.icon}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
                 </div>
-              )}
-            </div>
-            {form.paymentMethod && (
-              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>
-                A pending payment of UGX {total} will be created and linked to this transaction.
-              </div>
-            )}
-          </div>
 
-          {/* Notes */}
-          <div>
-            <label style={labelStyle}>Notes (optional)</label>
-            <textarea style={{ ...inputStyle, height: 64, resize: 'vertical' }} placeholder="Any additional notes..." value={form.notes} onChange={e => set('notes', e.target.value)} />
-          </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field>
+                    <FieldLabel htmlFor="txn-qty" className={fieldLabelClass}>Quantity (kg)</FieldLabel>
+                    <Input id="txn-qty" type="number" min="1" placeholder="e.g. 500" value={form.quantity} onChange={e => set('quantity', e.target.value)} required className={inputClass} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="txn-price" className={fieldLabelClass}>Unit Price (UGX/kg)</FieldLabel>
+                    <Input id="txn-price" type="number" min="1" placeholder="e.g. 1200" value={form.unitPrice} onChange={e => set('unitPrice', e.target.value)} required className={inputClass} />
+                  </Field>
+                </div>
 
-          {formError && (
-            <div style={{ backgroundColor: '#fef2f2', color: '#dc2626', padding: '8px 12px', borderRadius: 8, fontSize: 12, border: '1px solid #fee2e2' }}>{formError}</div>
-          )}
+                <Field>
+                  <FieldLabel className={fieldLabelClass}>Total Amount</FieldLabel>
+                  <div className="flex h-9 w-full items-center rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-2.5 font-mono text-[13px] font-semibold text-[#111827]">
+                    {total !== '—' ? `UGX ${total}` : <span className="font-normal text-[#9ca3af]">—</span>}
+                  </div>
+                </Field>
 
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-            <button type="button" onClick={onClose} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', color: '#374151', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {/* Markets */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Field>
+                    <FieldLabel htmlFor="txn-from" className={fieldLabelClass}>From Market</FieldLabel>
+                    <Select value={form.fromMarket} onValueChange={v => set('fromMarket', v)}>
+                      <SelectTrigger id="txn-from" className={triggerClass}>
+                        <SelectValue placeholder="Select market" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {markets.map(m => <SelectItem key={m._id} value={m._id}>{m.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="txn-to" className={fieldLabelClass}>To Market</FieldLabel>
+                    <Select value={form.toMarket} onValueChange={v => set('toMarket', v)}>
+                      <SelectTrigger id="txn-to" className={triggerClass}>
+                        <SelectValue placeholder="Select market" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {markets.map(m => <SelectItem key={m._id} value={m._id}>{m.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </div>
+
+                {/* Parties */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Field>
+                    <FieldLabel htmlFor="txn-buyer" className={fieldLabelClass}>Buyer</FieldLabel>
+                    <Input id="txn-buyer" type="text" placeholder="Buyer name" value={form.buyer} onChange={e => set('buyer', e.target.value)} className={inputClass} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="txn-seller" className={fieldLabelClass}>Seller</FieldLabel>
+                    <Input id="txn-seller" type="text" placeholder="Seller name" value={form.seller} onChange={e => set('seller', e.target.value)} className={inputClass} />
+                  </Field>
+                </div>
+
+                {/* Status */}
+                <Field>
+                  <FieldLabel htmlFor="txn-status" className={fieldLabelClass}>Initial Status</FieldLabel>
+                  <Select value={form.status} onValueChange={v => set('status', v)}>
+                    <SelectTrigger id="txn-status" className={triggerClass}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['pending', 'confirmed', 'in_transit', 'delivered', 'cancelled'].map(s => (
+                        <SelectItem key={s} value={s}>{s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                {/* Payment (optional) — only when creating a new transaction */}
+                {!isEdit && (
+                <FieldSet className="rounded-lg border border-[#f3f4f6] bg-[#f9fafb] px-4 py-3.5">
+                  <FieldLegend className="mb-0 px-1 text-[11px] font-semibold uppercase tracking-[0.07em] text-[#6b7280]">Payment (optional)</FieldLegend>
+                  <FieldGroup className="gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field>
+                        <FieldLabel htmlFor="txn-method" className={fieldLabelClass}>Payment Method</FieldLabel>
+                        <Select value={form.paymentMethod || 'none'} onValueChange={v => { set('paymentMethod', v === 'none' ? '' : v); set('paymentProvider', ''); }}>
+                          <SelectTrigger id="txn-method" className={triggerClass}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No payment yet</SelectItem>
+                            {PAYMENT_METHODS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                      {providers.length > 0 && (
+                        <Field>
+                          <FieldLabel htmlFor="txn-provider" className={fieldLabelClass}>Provider</FieldLabel>
+                          <Select value={form.paymentProvider} onValueChange={v => set('paymentProvider', v)}>
+                            <SelectTrigger id="txn-provider" className={triggerClass}>
+                              <SelectValue placeholder="Select provider" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {providers.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      )}
+                    </div>
+                    {form.paymentMethod && (
+                      <FieldDescription className="text-[11px]">
+                        A pending payment of UGX {total} will be created and linked to this transaction.
+                      </FieldDescription>
+                    )}
+                  </FieldGroup>
+                </FieldSet>
+                )}
+
+                {/* Notes */}
+                <Field>
+                  <FieldLabel htmlFor="txn-notes" className={fieldLabelClass}>Notes (optional)</FieldLabel>
+                  <Textarea id="txn-notes" placeholder="Any additional notes..." value={form.notes} onChange={e => set('notes', e.target.value)} className="min-h-[64px] rounded-lg border-[#e5e7eb] bg-white text-[13px] text-[#111827] focus-visible:border-[#1a6b30] focus-visible:ring-[#1a6b30]/15" />
+                </Field>
+
+                {formError && (
+                  <FieldError className="rounded-lg border border-[#fee2e2] bg-[#fef2f2] px-3 py-2 text-xs text-[#dc2626]">
+                    {formError}
+                  </FieldError>
+                )}
+              </FieldGroup>
+
+              <div className="mt-1 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="h-9 rounded-lg border-[#e5e7eb] bg-white px-4 text-[13px] font-medium text-[#374151] hover:bg-[#f9fafb] hover:text-[#111827]"
+            >
               Cancel
-            </button>
-            <button type="submit" disabled={saving} style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#1a6b30', color: '#fff', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: saving ? 0.7 : 1 }}>
-              {saving ? 'Saving…' : 'Create Transaction'}
-            </button>
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving}
+              className="h-9 rounded-lg bg-[#1a6b30] px-5 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.06)] hover:bg-[#155a28] focus-visible:ring-[#1a6b30]/25"
+            >
+              {saving ? 'Saving…' : (isEdit ? 'Save Changes' : 'Create Transaction')}
+            </Button>
           </div>
-        </form>
-      </div>
-    </div>
+            </form>
+          </CardContent>
+        </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-export default function TransactionsView({ currency = 'UGX', isMobile = false }) {
+export default function TransactionsView({ currency = 'UGX', isMobile = false, currentUser = null }) {
+  const isAdmin = currentUser?.role === 'admin';
   const [transactions, setTransactions] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -294,6 +374,10 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
   const [commodityFilter, setCommodityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
+  const [editTxn, setEditTxn] = useState(null);
+  const [detailsTxn, setDetailsTxn] = useState(null);
+  const [deleteTxn, setDeleteTxn] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function fetchData() {
     try {
@@ -315,6 +399,29 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
   function handleCreated(txn) {
     setTransactions(prev => [txn, ...prev]);
     setStats(prev => prev ? { ...prev, total: (prev.total || 0) + 1, pending: (prev.pending || 0) + 1, totalValue: (prev.totalValue || 0) + txn.totalAmount, totalVolume: (prev.totalVolume || 0) + txn.quantity } : prev);
+  }
+
+  function handleSaved(txn, wasEdit) {
+    if (wasEdit) {
+      setTransactions(prev => prev.map(t => t._id === txn._id ? txn : t));
+    } else {
+      handleCreated(txn);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTxn) return;
+    setDeleting(true);
+    try {
+      await transactionsApi.deleteTransaction(deleteTxn._id);
+      setTransactions(prev => prev.filter(t => t._id !== deleteTxn._id));
+      setStats(prev => prev ? { ...prev, total: Math.max(0, (prev.total || 0) - 1), totalValue: Math.max(0, (prev.totalValue || 0) - deleteTxn.totalAmount), totalVolume: Math.max(0, (prev.totalVolume || 0) - deleteTxn.quantity) } : prev);
+      setDeleteTxn(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   const filtered = transactions.filter(t => {
@@ -352,20 +459,21 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
           <h1 className="dash-title">Transactions</h1>
           <p className="dash-subtitle">Commodity trade records across all markets</p>
         </div>
-        <button
+        <Button
+          size="lg"
           onClick={() => setShowModal(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: 'none', background: '#1a6b30', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+          className="h-9 gap-1.5 rounded-lg bg-[#1a6b30] px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.06)] hover:bg-[#155a28] focus-visible:ring-[#1a6b30]/25"
         >
           <Plus size={15} />
           <Tooltip text="Record a new trade — buying or selling a commodity between markets"><span>New Transaction</span></Tooltip>
-        </button>
+        </Button>
       </div>
 
       <div className="dash-cards">
-        <SummaryCard icon={<CreditCard size={18} />} label={<Tooltip text="The total number of trades recorded across all markets"><span>Total Transactions</span></Tooltip>} value={loading ? '—' : (stats?.total || 0)} sub="All time" color="#1f8a3e" loading={loading} trend={8} />
-        <SummaryCard icon={<Package size={18} />} label={<Tooltip text="The total weight of all goods traded, measured in metric tons"><span>Total Volume</span></Tooltip>} value={loading ? '—' : `${(totalVolume / 1000).toFixed(0)}T`} sub="Metric tons traded" color="#2563eb" loading={loading} trend={5} />
-        <SummaryCard icon={<CreditCard size={18} />} label={<Tooltip text="The total money value of all trades combined"><span>Total Value</span></Tooltip>} value={loading ? '—' : fmtAmount(totalValue)} sub={`In ${currency}`} color="#7c3aed" loading={loading} trend={12} />
-        <SummaryCard icon={<Package size={18} />} label={<Tooltip text="Trades that have been agreed but not yet completed or delivered"><span>Pending</span></Tooltip>} value={loading ? '—' : (stats?.pending || 0)} sub="Awaiting confirmation" color="#d97706" loading={loading} />
+        <SummaryCard isMobile={isMobile} icon={<CreditCard size={isMobile ? 15 : 18} />} label={<Tooltip text="The total number of trades recorded across all markets"><span>Total Transactions</span></Tooltip>} value={loading ? '—' : (stats?.total || 0)} sub="All time" color="#1f8a3e" loading={loading} trend={8} />
+        <SummaryCard isMobile={isMobile} icon={<Package size={isMobile ? 15 : 18} />} label={<Tooltip text="The total weight of all goods traded, measured in metric tons"><span>Total Volume</span></Tooltip>} value={loading ? '—' : `${(totalVolume / 1000).toFixed(0)}T`} sub="Metric tons traded" color="#2563eb" loading={loading} trend={5} />
+        <SummaryCard isMobile={isMobile} icon={<CreditCard size={isMobile ? 15 : 18} />} label={<Tooltip text="The total money value of all trades combined"><span>Total Value</span></Tooltip>} value={loading ? '—' : fmtAmount(totalValue)} sub={`In ${currency}`} color="#7c3aed" loading={loading} trend={12} />
+        <SummaryCard isMobile={isMobile} icon={<Package size={isMobile ? 15 : 18} />} label={<Tooltip text="Trades that have been agreed but not yet completed or delivered"><span>Pending</span></Tooltip>} value={loading ? '—' : (stats?.pending || 0)} sub="Awaiting confirmation" color="#d97706" loading={loading} />
       </div>
 
       {error && (
@@ -373,23 +481,57 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
       )}
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          <button style={pillStyle(commodityFilter === 'all')} onClick={() => setCommodityFilter('all')}>All Commodities</button>
-          {commodities.map(c => (
-            <button key={c.key} style={pillStyle(commodityFilter === c.key)} onClick={() => setCommodityFilter(c.key)}>
-              <span style={{ marginRight: 3 }}>{c.icon}</span>{c.label}
-            </button>
-          ))}
+      {isMobile ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <Select value={commodityFilter} onValueChange={setCommodityFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Filter by commodity</SelectLabel>
+                <SelectItem value="all">All Commodities</SelectItem>
+                {commodities.map(c => (
+                  <SelectItem key={c.key} value={c.key} icon={c.icon}>{c.label}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Filter by status</SelectLabel>
+                {['all', 'pending', 'confirmed', 'in_transit', 'delivered', 'cancelled'].map(s => (
+                  <SelectItem key={s} value={s}>
+                    {s === 'all' ? 'All Status' : s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {['all', 'pending', 'confirmed', 'in_transit', 'delivered', 'cancelled'].map(s => (
-            <button key={s} style={pillStyle(statusFilter === s)} onClick={() => setStatusFilter(s)}>
-              {s === 'all' ? 'All Status' : s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-            </button>
-          ))}
+      ) : (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            <button style={pillStyle(commodityFilter === 'all')} onClick={() => setCommodityFilter('all')}>All Commodities</button>
+            {commodities.map(c => (
+              <button key={c.key} style={pillStyle(commodityFilter === c.key)} onClick={() => setCommodityFilter(c.key)}>
+                <span style={{ marginRight: 3 }}>{c.icon}</span>{c.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {['all', 'pending', 'confirmed', 'in_transit', 'delivered', 'cancelled'].map(s => (
+              <button key={s} style={pillStyle(statusFilter === s)} onClick={() => setStatusFilter(s)}>
+                {s === 'all' ? 'All Status' : s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Table (desktop) / Cards (mobile) */}
       {isMobile ? (
@@ -405,17 +547,46 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
               {filtered.map(t => {
                 const comm = commodities.find(c => c.key === t.commodity);
                 return (
-                  <div key={t._id} className="mob-card">
+                  <div key={t._id} className="mob-card relative">
                     <div className="mob-card-row">
                       <span className="mob-card-name">
                         {comm?.icon && <span style={{ marginRight: 4 }}>{comm.icon}</span>}
                         {comm?.label || t.commodity}
                       </span>
-                      <Badge value={t.status} map={STATUS_COLORS} />
+                      <div className="flex items-center gap-2">
+                        <StatusBadge value={t.status} />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label="Transaction actions"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#111827] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1a6b30]/25"
+                            >
+                              <MoreHorizontal size={16} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-[160px]">
+                            <DropdownMenuItem onSelect={() => setDetailsTxn(t)} className="gap-2 text-[13px]">
+                              <Info size={14} /> View details
+                            </DropdownMenuItem>
+                            {isAdmin && (
+                              <>
+                                <DropdownMenuItem onSelect={() => setEditTxn(t)} className="gap-2 text-[13px]">
+                                  <Pencil size={14} /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => setDeleteTxn(t)} className="gap-2 text-[13px] text-[#dc2626] focus:bg-[#fef2f2] focus:text-[#b91c1c]">
+                                  <Trash2 size={14} /> Delete
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                     <div className="mob-card-row" style={{ marginTop: 8 }}>
                       <span className="mob-card-amount">{fmtAmount(t.totalAmount)}</span>
-                      <Badge value={t.type} map={TYPE_COLORS} />
+                      <StatusBadge value={t.type} />
                     </div>
                     <div className="mob-card-meta">
                       {fmtDate(t.date)} · {t.quantity.toLocaleString()} kg
@@ -475,7 +646,7 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
                       onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                       <td style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: '#6b7280' }}>{t.transactionId}</td>
                       <td style={{ padding: '12px 16px', color: 'var(--gray-600)', whiteSpace: 'nowrap' }}>{fmtDate(t.date)}</td>
-                      <td style={{ padding: '12px 16px' }}><Badge value={t.type} map={TYPE_COLORS} /></td>
+                      <td style={{ padding: '12px 16px' }}><StatusBadge value={t.type} /></td>
                       <td style={{ padding: '12px 16px', color: 'var(--gray-700)', fontWeight: 'var(--weight-medium)' }}>
                         <span style={{ marginRight: 4 }}>{comm?.icon}</span>{comm?.label || t.commodity}
                       </td>
@@ -491,7 +662,7 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
                       <td style={{ padding: '12px 16px', color: 'var(--gray-500)', fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>
                         {t.fromMarket?.name || '—'} → {t.toMarket?.name || '—'}
                       </td>
-                      <td style={{ padding: '12px 16px' }}><Badge value={t.status} map={STATUS_COLORS} /></td>
+                      <td style={{ padding: '12px 16px' }}><StatusBadge value={t.status} /></td>
                     </tr>
                   );
                 })
@@ -508,11 +679,128 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false })
       )}
 
       {showModal && (
-        <AddTransactionModal
+        <TransactionFormModal
           onClose={() => setShowModal(false)}
-          onCreated={handleCreated}
+          onSaved={handleSaved}
+        />
+      )}
+
+      {editTxn && (
+        <TransactionFormModal
+          initial={editTxn}
+          onClose={() => setEditTxn(null)}
+          onSaved={handleSaved}
+        />
+      )}
+
+      {detailsTxn && (
+        <TransactionDetailsModal
+          txn={detailsTxn}
+          fmtAmount={fmtAmount}
+          fmtDate={fmtDate}
+          onClose={() => setDetailsTxn(null)}
+        />
+      )}
+
+      {deleteTxn && (
+        <DeleteConfirmModal
+          txn={deleteTxn}
+          saving={deleting}
+          onCancel={() => setDeleteTxn(null)}
+          onConfirm={handleDelete}
         />
       )}
     </div>
+  );
+}
+
+function TransactionDetailsModal({ txn, fmtAmount, fmtDate, onClose }) {
+  const comm = commodities.find(c => c.key === txn.commodity);
+  const rows = [
+    ['Transaction ID', txn.transactionId],
+    ['Date', fmtDate(txn.date)],
+    ['Type', txn.type],
+    ['Commodity', comm?.label || txn.commodity],
+    ['Quantity', `${txn.quantity?.toLocaleString()} kg`],
+    ['Unit Price', `${fmtAmount(txn.unitPrice)}/kg`],
+    ['Total', fmtAmount(txn.totalAmount)],
+    ['From', txn.fromMarket?.name || '—'],
+    ['To', txn.toMarket?.name || '—'],
+    ['Buyer', txn.buyer || '—'],
+    ['Seller', txn.seller || '—'],
+    ['Status', txn.status?.replace('_', ' ')],
+  ];
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="!max-w-[480px] max-h-[90vh] overflow-y-auto border-none bg-transparent p-0 shadow-none ring-0">
+        <Card className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.22)]">
+          <CardHeader className="space-y-1 border-b border-[#f3f4f6] px-6 pt-5 pb-4">
+            <DialogTitle className="text-base font-bold tracking-[-0.01em] text-[#111827]">Transaction Details</DialogTitle>
+            <DialogDescription className="text-xs text-[#6b7280]">
+              {txn.transactionId}
+            </DialogDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <dl className="divide-y divide-[#f3f4f6]">
+              {rows.map(([label, value]) => (
+                <div key={label} className="grid grid-cols-[110px_1fr] gap-4 px-6 py-2.5">
+                  <dt className="text-[11px] font-semibold uppercase tracking-[0.07em] text-[#6b7280]">{label}</dt>
+                  <dd className="text-[13px] font-medium capitalize text-[#111827]">{value}</dd>
+                </div>
+              ))}
+              {txn.notes && (
+                <div className="grid grid-cols-[110px_1fr] gap-4 px-6 py-2.5">
+                  <dt className="text-[11px] font-semibold uppercase tracking-[0.07em] text-[#6b7280]">Notes</dt>
+                  <dd className="text-[13px] text-[#374151]">{txn.notes}</dd>
+                </div>
+              )}
+            </dl>
+            <div className="flex justify-end border-t border-[#f3f4f6] px-6 py-4">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="h-9 rounded-lg border-[#e5e7eb] bg-white px-4 text-[13px] font-medium text-[#374151] hover:bg-[#f9fafb] hover:text-[#111827]"
+              >
+                Close
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteConfirmModal({ txn, saving, onCancel, onConfirm }) {
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <DialogContent className="!max-w-[400px] border-none bg-transparent p-0 shadow-none ring-0">
+        <Card className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.22)]">
+          <CardHeader className="space-y-1 border-b border-[#f3f4f6] px-6 pt-5 pb-4">
+            <DialogTitle className="text-base font-bold tracking-[-0.01em] text-[#111827]">Delete transaction?</DialogTitle>
+            <DialogDescription className="text-xs text-[#6b7280]">
+              {txn.transactionId} will be permanently removed along with any linked payment records. This cannot be undone.
+            </DialogDescription>
+          </CardHeader>
+          <CardContent className="flex justify-end gap-2 px-6 py-4">
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              disabled={saving}
+              className="h-9 rounded-lg border-[#e5e7eb] bg-white px-4 text-[13px] font-medium text-[#374151] hover:bg-[#f9fafb] hover:text-[#111827]"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={onConfirm}
+              disabled={saving}
+              className="h-9 rounded-lg bg-[#dc2626] px-5 text-[13px] font-semibold text-white hover:bg-[#b91c1c] focus-visible:ring-[#dc2626]/25"
+            >
+              {saving ? 'Deleting…' : 'Delete'}
+            </Button>
+          </CardContent>
+        </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
