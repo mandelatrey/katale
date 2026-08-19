@@ -7,7 +7,7 @@ import Counter from '../models/Counter.js';
  * @returns {Promise<number>};
 */ 
 
-export async function nextSeq(name, getSessionStore) {
+export async function nextSeq(name, session) {
     const doc = await Counter.findByIdAndUpdate(
         name,
         { $inc: { seq: 1}},
