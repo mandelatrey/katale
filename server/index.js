@@ -23,6 +23,44 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // For Twilio form-encoded webhooks
 
+// Serverless cold starts hit /api/* before mongoose has finished connecting,
+// which causes mongoose to buffer the query and eventually time out (~10s).
+// Memoize the connection promise and await it before any DB-backed route runs.
+let mongoReady = null;
+function ensureDb() {
+  if (mongoReady) return mongoReady;
+  mongoReady = mongoose
+    .connect(MONGODB_URI, {
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 30000,
+    })
+    .then(() => {
+      console.log(
+        "[mongo] MongoDB connected to",
+        MONGODB_URI.replace(/\/\/.*@/, "//***@"),
+      );
+      return mongoose.connection;
+    })
+    .catch((err) => {
+      mongoReady = null; // let the next request retry
+      throw err;
+    });
+  return mongoReady;
+}
+
+app.use(async (req, res, next) => {
+  try {
+    await ensureDb();
+    next();
+  } catch (err) {
+    console.error("[mongo] connect failed:", err.message);
+    res.status(503).json({ error: "Database temporarily unavailable" });
+  }
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/markets", marketRoutes);
@@ -65,29 +103,14 @@ function startServer(port) {
 }
 
 // Start the HTTP server immediately — it does not need MongoDB to accept
-// requests. DB-dependent routes will return errors until the connection
-// is established. Mongoose retries the connection automatically.
+// requests. DB-dependent routes await ensureDb() via middleware.
 startServer(PORT);
 
-mongoose
-  .connect(MONGODB_URI, {
-    maxPoolSize: 10,
-    minPoolSize: 2,
-    connectTimeoutMS: 10000,
-    socketTimeoutMS: 45000,
-    serverSelectionTimeoutMS: 30000,
-  })
-  .then(() => {
-    console.log("[mongo] MongoDB connected to", MONGODB_URI.replace(/\/\/.*@/, "//***@"));
-  })
-  .catch((err) => {
-    console.error("[mongo] MongoDB initial connection failed:", err.message);
-    console.error(
-      "[mongo] Set MONGODB_URI in server/.env to connect. Retrying in the background…",
-    );
-    // Do not exit — mongoose will keep retrying on subsequent requests
-    // once a MongoDB instance becomes reachable.
-  });
+// Warm the connection at boot so the first request doesn't pay the full
+// cost. Failures are surfaced per-request by the middleware above.
+ensureDb().catch((err) => {
+  console.error("[mongo] warmup failed:", err.message);
+});
 
 mongoose.connection.on("connected", () =>
   console.log("[mongo] MongoDB reconnected"),

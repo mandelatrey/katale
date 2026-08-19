@@ -388,6 +388,22 @@ function App() {
   const currentCommodity = commodities.find(c => c.key === selectedCommodity);
   const currentBaseLayer = BASE_LAYERS.find(l => l.id === baseLayerType);
 
+  // The map should only be visible on the commodities view. On desktop that
+  // is the MAP route; on mobile it is the "commodities" tab. Everywhere else
+  // the map is hidden so the transactions / payments / reports panels don't
+  // sit on top of a live map they never asked for.
+  const showMap = isMobile
+    ? activeTab === 'commodities'
+    : location.pathname === ROUTES.MAP;
+
+  // OpenLayers needs an updateSize() call whenever its container comes back
+  // into view — otherwise the canvas keeps the size it had when it was
+  // display:none.
+  useEffect(() => {
+    if (!map || !showMap) return;
+    map.updateSize();
+  }, [map, showMap]);
+
   // Architecture view is public — no auth required
   if (location.pathname === ROUTES.ARCHITECTURE) return <ArchitectureView />;
 
@@ -623,8 +639,8 @@ function App() {
         </div>
       </div>
 
-      <div className="map-container">
-        <div id="map" ref={mapRef}></div>
+      <div className="map-container" style={{ background: '#fff' }}>
+        <div id="map" ref={mapRef} style={{ display: showMap ? 'block' : 'none' }}></div>
 
         {isMobile && (
           <>
@@ -1058,7 +1074,7 @@ function App() {
           </>
         )}
 
-        {!isMobile && location.pathname === ROUTES.MAP && (
+        {!isMobile && showMap && (
           <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 400 }}>
             <div style={{ backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid #f0f0f0', boxShadow: '0 8px 30px rgba(0,0,0,.12)', padding: '10px 8px', fontFamily: 'inherit', width: 148, overflow: 'hidden' }}>
               {/* Header */}
@@ -1105,7 +1121,7 @@ function App() {
           </div>
         )}
 
-        {selectedMarket && (
+        {selectedMarket && showMap && (
           <Popup
             map={map}
             market={selectedMarket}
@@ -1117,7 +1133,7 @@ function App() {
           />
         )}
 
-        <div style={{ position: 'absolute', bottom: isMobile ? 80 : 16, right: 16, zIndex: 400, backgroundColor: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', padding: '10px 14px', boxShadow: '0 2px 8px rgba(0,0,0,.08)', fontSize: 11 }}>
+        {showMap && <div style={{ position: 'absolute', bottom: isMobile ? 80 : 16, right: 16, zIndex: 400, backgroundColor: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', padding: '10px 14px', boxShadow: '0 2px 8px rgba(0,0,0,.08)', fontSize: 11 }}>
           <div style={{ fontWeight: 700, color: '#374151', marginBottom: 6, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Price Level</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#1f8a3e' }}></div>
@@ -1137,15 +1153,17 @@ function App() {
               <span>Your location</span>
             </div>
           )}
-        </div>
+        </div>}
 
-        <div className="attribution">
-          Price data sourced from{' '}
-          <a href="https://farmgainafrica.org" target="_blank" rel="noopener">Farmgain Africa</a>,{' '}
-          <a href="https://agromarketday.com" target="_blank" rel="noopener">AgroMarketDay</a>,{' '}
-          <a href="https://ugandacoffee.go.ug" target="_blank" rel="noopener">UCDA</a>,{' '}
-          <a href="https://ubos.org" target="_blank" rel="noopener">UBOS</a>
-        </div>
+        {showMap && (
+          <div className="attribution">
+            Price data sourced from{' '}
+            <a href="https://farmgainafrica.org" target="_blank" rel="noopener">Farmgain Africa</a>,{' '}
+            <a href="https://agromarketday.com" target="_blank" rel="noopener">AgroMarketDay</a>,{' '}
+            <a href="https://ugandacoffee.go.ug" target="_blank" rel="noopener">UCDA</a>,{' '}
+            <a href="https://ubos.org" target="_blank" rel="noopener">UBOS</a>
+          </div>
+        )}
       </div>
       </div>
       </div>
