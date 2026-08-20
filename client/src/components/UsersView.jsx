@@ -569,7 +569,7 @@ export default function UsersView({ currentUser }) {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
             <h1 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0 }}>Users</h1>
-            <p style={{ fontSize: 11, color: '#6b7280', margin: '3px 0 0' }}>
+            <p style={{ fontSize: 11, color: '#6b7280', margin: '3px 0 0', maxWidth: 260 }}>
               Manage platform users, team members, and their permissions
             </p>
           </div>
@@ -577,10 +577,11 @@ export default function UsersView({ currentUser }) {
             <button
               onClick={() => setShowAddModal(true)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6,
+                display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '8px 14px', borderRadius: 8, border: 'none',
                 background: '#1f8a3e', color: '#fff',
                 fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                whiteSpace: 'nowrap', flexShrink: 0,
               }}
             >
               <Plus className="h-3 w-3" />

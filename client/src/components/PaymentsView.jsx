@@ -101,12 +101,8 @@ export default function PaymentsView({ currency = 'UGX', isMobile = false }) {
   });
 
   function fmtAmount(ugx) {
-    const v = currency === 'USD' ? ugx / UGX_TO_USD : ugx;
-    const pfx = currency === 'USD' ? '$' : 'UGX ';
-    if (v >= 1_000_000_000) return `${pfx}${(v / 1_000_000_000).toFixed(1)}B`;
-    if (v >= 1_000_000) return `${pfx}${(v / 1_000_000).toFixed(1)}M`;
-    if (v >= 1000) return `${pfx}${(v / 1000).toFixed(0)}K`;
-    return `${pfx}${Math.round(v).toLocaleString()}`;
+    if (currency === 'USD') return `$${(ugx / UGX_TO_USD).toFixed(2)}`;
+    return `UGX ${Math.round(ugx).toLocaleString()}`;
   }
 
   function fmtDate(d) {

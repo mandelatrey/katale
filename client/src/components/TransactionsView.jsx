@@ -121,6 +121,10 @@ function TransactionFormModal({ onClose, onSaved, initial }) {
     paymentMethod: '', paymentProvider: '',
   });
 
+  const [betweenMarkets, setBetweenMarkets] = useState(() =>
+    initial ? !!(initial.fromMarket || initial.toMarket) : true
+  );
+
   useEffect(() => {
     marketsApi.listMarkets()
       .then((m) => setMarkets(Array.isArray(m) ? m : []))
@@ -147,8 +151,8 @@ function TransactionFormModal({ onClose, onSaved, initial }) {
         commodity: form.commodity,
         quantity: Number(form.quantity),
         unitPrice: Number(form.unitPrice),
-        fromMarket: form.fromMarket || undefined,
-        toMarket:   form.toMarket   || undefined,
+        fromMarket: betweenMarkets ? (form.fromMarket || undefined) : undefined,
+        toMarket:   betweenMarkets ? (form.toMarket   || undefined) : undefined,
         buyer:   form.buyer   || undefined,
         seller:  form.seller  || undefined,
         status:  form.status,
@@ -234,30 +238,55 @@ function TransactionFormModal({ onClose, onSaved, initial }) {
                 </Field>
 
                 {/* Markets */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Field>
-                    <FieldLabel htmlFor="txn-from" className={fieldLabelClass}>From Market</FieldLabel>
-                    <Select value={form.fromMarket} onValueChange={v => set('fromMarket', v)}>
-                      <SelectTrigger id="txn-from" className={triggerClass}>
-                        <SelectValue placeholder="Select market" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {markets.map(m => <SelectItem key={m._id} value={m._id}>{m.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="txn-to" className={fieldLabelClass}>To Market</FieldLabel>
-                    <Select value={form.toMarket} onValueChange={v => set('toMarket', v)}>
-                      <SelectTrigger id="txn-to" className={triggerClass}>
-                        <SelectValue placeholder="Select market" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {markets.map(m => <SelectItem key={m._id} value={m._id}>{m.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </Field>
+                <div className="flex items-center justify-between rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2">
+                  <div className="flex flex-col">
+                    <span className={fieldLabelClass}>Between markets</span>
+                    <span className="mt-0.5 text-[11px] text-[#6b7280]">
+                      Turn off if this trade is between individuals
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={betweenMarkets}
+                    onClick={() => setBetweenMarkets(v => !v)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1a6b30]/25 ${
+                      betweenMarkets ? 'bg-[#1a6b30]' : 'bg-[#d1d5db]'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                        betweenMarkets ? 'translate-x-4' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
                 </div>
+                {betweenMarkets && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field>
+                      <FieldLabel htmlFor="txn-from" className={fieldLabelClass}>From Market</FieldLabel>
+                      <Select value={form.fromMarket} onValueChange={v => set('fromMarket', v)}>
+                        <SelectTrigger id="txn-from" className={triggerClass}>
+                          <SelectValue placeholder="Select market" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {markets.map(m => <SelectItem key={m._id} value={m._id}>{m.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="txn-to" className={fieldLabelClass}>To Market</FieldLabel>
+                      <Select value={form.toMarket} onValueChange={v => set('toMarket', v)}>
+                        <SelectTrigger id="txn-to" className={triggerClass}>
+                          <SelectValue placeholder="Select market" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {markets.map(m => <SelectItem key={m._id} value={m._id}>{m.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+                )}
 
                 {/* Parties */}
                 <div className="grid grid-cols-2 gap-3">
@@ -431,12 +460,8 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false, c
   });
 
   function fmtAmount(ugx) {
-    const v = currency === 'USD' ? ugx / UGX_TO_USD : ugx;
-    const pfx = currency === 'USD' ? '$' : 'UGX ';
-    if (v >= 1_000_000_000) return `${pfx}${(v / 1_000_000_000).toFixed(1)}B`;
-    if (v >= 1_000_000) return `${pfx}${(v / 1_000_000).toFixed(1)}M`;
-    if (v >= 1000) return `${pfx}${(v / 1000).toFixed(0)}K`;
-    return `${pfx}${Math.round(v).toLocaleString()}`;
+    if (currency === 'USD') return `$${(ugx / UGX_TO_USD).toFixed(2)}`;
+    return `UGX ${Math.round(ugx).toLocaleString()}`;
   }
 
   function fmtDate(d) {
@@ -471,7 +496,7 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false, c
 
       <div className="dash-cards">
         <SummaryCard isMobile={isMobile} icon={<CreditCard size={isMobile ? 15 : 18} />} label={<Tooltip text="The total number of trades recorded across all markets"><span>Total Transactions</span></Tooltip>} value={loading ? '—' : (stats?.total || 0)} sub="All time" color="#1f8a3e" loading={loading} trend={8} />
-        <SummaryCard isMobile={isMobile} icon={<Package size={isMobile ? 15 : 18} />} label={<Tooltip text="The total weight of all goods traded, measured in metric tons"><span>Total Volume</span></Tooltip>} value={loading ? '—' : `${(totalVolume / 1000).toFixed(0)}T`} sub="Metric tons traded" color="#2563eb" loading={loading} trend={5} />
+        <SummaryCard isMobile={isMobile} icon={<Package size={isMobile ? 15 : 18} />} label={<Tooltip text="The total weight of all goods traded, in kilograms"><span>Total Volume</span></Tooltip>} value={loading ? '—' : `${Math.round(totalVolume).toLocaleString()} kg`} sub="Kilograms traded" color="#2563eb" loading={loading} trend={5} />
         <SummaryCard isMobile={isMobile} icon={<CreditCard size={isMobile ? 15 : 18} />} label={<Tooltip text="The total money value of all trades combined"><span>Total Value</span></Tooltip>} value={loading ? '—' : fmtAmount(totalValue)} sub={`In ${currency}`} color="#7c3aed" loading={loading} trend={12} />
         <SummaryCard isMobile={isMobile} icon={<Package size={isMobile ? 15 : 18} />} label={<Tooltip text="Trades that have been agreed but not yet completed or delivered"><span>Pending</span></Tooltip>} value={loading ? '—' : (stats?.pending || 0)} sub="Awaiting confirmation" color="#d97706" loading={loading} />
       </div>
@@ -549,9 +574,12 @@ export default function TransactionsView({ currency = 'UGX', isMobile = false, c
                 return (
                   <div key={t._id} className="mob-card relative">
                     <div className="mob-card-row">
-                      <span className="mob-card-name">
-                        {comm?.icon && <span style={{ marginRight: 4 }}>{comm.icon}</span>}
-                        {comm?.label || t.commodity}
+                      <span className="mob-card-name" style={{ display: 'inline-flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>{t.transactionId}</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 8, fontWeight: 500, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {comm?.icon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{comm.icon}</span>}
+                          {comm?.label || t.commodity}
+                        </span>
                       </span>
                       <div className="flex items-center gap-2">
                         <StatusBadge value={t.status} />

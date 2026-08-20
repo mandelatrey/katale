@@ -49,12 +49,8 @@ function EntryTypeBadge({ type }) {
 
 function StatementRow({ statement, currency, expanded, onToggle }) {
   function fmtAmount(ugx) {
-    const v = currency === 'USD' ? ugx / UGX_TO_USD : ugx;
-    const pfx = currency === 'USD' ? '$' : 'UGX ';
-    if (v >= 1_000_000_000) return `${pfx}${(v / 1_000_000_000).toFixed(2)}B`;
-    if (v >= 1_000_000) return `${pfx}${(v / 1_000_000).toFixed(2)}M`;
-    if (v >= 1000) return `${pfx}${(v / 1000).toFixed(0)}K`;
-    return `${pfx}${Math.round(v).toLocaleString()}`;
+    if (currency === 'USD') return `$${(ugx / UGX_TO_USD).toFixed(2)}`;
+    return `UGX ${Math.round(ugx).toLocaleString()}`;
   }
 
   const netChange = statement.closingBalance - statement.openingBalance;
@@ -201,12 +197,8 @@ export default function StatementsView({ currency = 'UGX', isMobile = false }) {
   }
 
   function fmtAmount(ugx) {
-    const v = currency === 'USD' ? ugx / UGX_TO_USD : ugx;
-    const pfx = currency === 'USD' ? '$' : 'UGX ';
-    if (v >= 1_000_000_000) return `${pfx}${(v / 1_000_000_000).toFixed(2)}B`;
-    if (v >= 1_000_000) return `${pfx}${(v / 1_000_000).toFixed(2)}M`;
-    if (v >= 1000) return `${pfx}${(v / 1000).toFixed(0)}K`;
-    return `${pfx}${Math.round(v).toLocaleString()}`;
+    if (currency === 'USD') return `$${(ugx / UGX_TO_USD).toFixed(2)}`;
+    return `UGX ${Math.round(ugx).toLocaleString()}`;
   }
 
   const latest = statements[0];

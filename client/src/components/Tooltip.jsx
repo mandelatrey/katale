@@ -24,7 +24,7 @@ export default function Tooltip({ text, children }) {
             marginBottom: 6,
             backgroundColor: '#111827',
             color: '#f9fafb',
-            fontSize: 15,
+            fontSize: 11,
             lineHeight: 1.4,
             fontWeight: 400,
             padding: '5px 9px',
